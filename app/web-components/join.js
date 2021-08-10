@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { createUseStyles } from 'react-jss'
 
-import AuthForm from '../components/auth-form'
+import { AuthForm } from 'civil-client'
 
 function Join(props) {
   const classes = useStyles()

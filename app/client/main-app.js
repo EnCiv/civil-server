@@ -1,6 +1,6 @@
-'use strict';
+'use strict'
 
-import clientMain from './main'
+import { clientMain } from 'civil-client'
 import App from '../components/app'
 
 clientMain(App)

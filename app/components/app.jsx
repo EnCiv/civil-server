@@ -4,7 +4,7 @@ import React from 'react'
 import { hot } from 'react-hot-loader'
 import WebComponents from '../web-components'
 import Footer from './footer'
-import ErrorBoundary from './error-boundary'
+import { ErrorBoundary } from 'civil-client'
 
 class App extends React.Component {
   render() {
