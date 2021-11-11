@@ -16,10 +16,10 @@ class User extends MongoModels {
   static create(user) {
     return new Promise(async (ok, ko) => {
       var error
-      const { password, email, name, firstName, lastName } = user
-      if (!email) error = `User.create attempted, but no email. name=${name}`
+      const { password, email, name } = user
+      // email is not required if creating temp it -- if (!email) error = `User.create attempted, but no email. name=${name}`
       if (!password) error = `User.create attempted, but no password. name=${name}, email=${email}`
-      if (password && email) {
+      if (password) {
         bcrypt.hash(password, 10, async (err, hash) => {
           if (err) {
             logger.error((error = `User password encryption failed ${err}`))
