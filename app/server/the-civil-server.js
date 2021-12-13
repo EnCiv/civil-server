@@ -17,6 +17,36 @@ import mongologger from './util/mongo-logger'
 import path from 'path'
 import App from '../components/app'
 
+// these are the directive requited for helment conntent security below
+let directives = {
+  defaultSrc: ["'self'"],
+  childSrc: ["'self'"],
+  scriptSrc: [
+    "'self'",
+    "'unsafe-inline'",
+    '*.fontawesome.com',
+    '*.googletagmanager.com',
+    'webrtc.github.io',
+    '*.google-analytics.com',
+  ],
+  scriptSrcElem: [
+    "'self'",
+    "'unsafe-inline'",
+    '*.fontawesome.com',
+    '*.googletagmanager.com',
+    'webrtc.github.io',
+    '*.google-analytics.com',
+  ],
+  fontSrc: ["'self'", '*.gstatic.com', 'ka-f.fontawesome.com'],
+  styleSrc: ["'self'", "'unsafe-inline'", '*.googleapis.com'],
+  imgSrc: ["'self'", '*.cloudinary.com', 'enciv.org', '*.google-analytics.com'],
+  mediaSrc: ["'self'", '*.cloudinary.com', 'blob:', 'mediastream:'],
+  connectSrc: ["'self'", 'ka-f.fontawesome.com', '*.google-analytics.com'],
+  frameSrc: ["'self'", 'docs.google.com'],
+}
+
+if (process.env.NODE_ENV === 'development') directives.scriptSrc.push("'unsafe-eval'") // used in development on webpack
+
 if (!global.logger) {
   log4js.configure({
     appenders: {
@@ -130,17 +160,7 @@ class HttpServer {
         this.app.use(compression())
         this.app.use(helmet({ frameguard: false }))
         this.app.use(helmet.hidePoweredBy({ setTo: 'Powered by Ruby on Rails.' }))
-        this.app.use(
-          helmet.contentSecurityPolicy({
-            directives: {
-              defaultSrc: ["'self'"],
-              scriptSrc: ["'self'", "'unsafe-inline'"],
-              scriptSrcElem: ["'self'", "'unsafe-inline'"],
-              styleSrc: ["'self'", "'unsafe-inline'"],
-              connectSrc: ["'self'"],
-            },
-          })
-        )
+        this.app.use(helmet.contentSecurityPolicy({ directives }))
         this.app.use(bodyParser.urlencoded({ extended: true }), bodyParser.json(), bodyParser.text())
         this.app.use(cookieParser())
         this.app.use(

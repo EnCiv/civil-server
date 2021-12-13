@@ -18,11 +18,11 @@ class Log extends MongoModels {
         if (result && result.length === 1) ok(result[0])
         else {
           console.error(`Log.create unexpected number of results received ${results.length}`)
-          ko()
+          ok() // if there's an error just keep going don't ko()
         }
       } catch (err) {
         console.error(`Log.create caught error:`, err)
-        ko()
+        ok() // if there's an error just keep going don't ko() an example was when trying to stringify an object that had '.' in one of the keys - an error was through. We can't log it but we don't wait to crash the server
       }
     })
   }
