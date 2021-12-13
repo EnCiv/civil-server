@@ -130,6 +130,17 @@ class HttpServer {
         this.app.use(compression())
         this.app.use(helmet({ frameguard: false }))
         this.app.use(helmet.hidePoweredBy({ setTo: 'Powered by Ruby on Rails.' }))
+        this.app.use(
+          helmet.contentSecurityPolicy({
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'"],
+              scriptSrcElem: ["'self'", "'unsafe-inline'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              connectSrc: ["'self'"],
+            },
+          })
+        )
         this.app.use(bodyParser.urlencoded({ extended: true }), bodyParser.json(), bodyParser.text())
         this.app.use(cookieParser())
         this.app.use(
