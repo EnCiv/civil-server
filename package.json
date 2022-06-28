@@ -19,7 +19,8 @@
     "postinstall": "bash postinstall.sh",
     "packbuild": "webpack --config webpack-prod.config.js",
     "dev": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server\" \"sleep 15 && npm run hot-client\"",
-    "dev-no-inspect": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server-no-inspect\" \"sleep 15 && npm run hot-client\""
+    "dev-no-inspect": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server-no-inspect\" \"sleep 15 && npm run hot-client\"",
+    "prestart": "npm run packbuild"
   },
   "repository": {
     "type": "git",

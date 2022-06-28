@@ -35,14 +35,6 @@ npm run transpile  || {
 }
 echo "transpile ok"
 
-echo '*************************************************************************'
-echo WEBPACK
-echo '*************************************************************************'
-
-npm run packbuild  || {
-  echo Could not webpack;
-  exit 1
-}
-echo "webpack ok"
+# packbuild moved to prestart script
 
 
