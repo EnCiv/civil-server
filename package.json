@@ -32,8 +32,9 @@
     "url": "https://github.com/EnCiv/civil-server/issues"
   },
   "homepage": "https://github.com/EnCiv/civil-server#readme",
-  "devDependencies": {
+  "peerDependencies": {
     "@shelf/jest-mongodb": "^2.2.0",
+    "civil-client": "github:EnCiv/civil-client#heroku-oom",
     "concurrently": "^6.4.0",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
@@ -63,7 +64,6 @@
     "body-parser": "^1.19.1",
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
-    "civil-client": "github:EnCiv/civil-client",
     "classnames": "^2.3.1",
     "cloudinary": "^1.27.1",
     "compression": "^1.7.4",
