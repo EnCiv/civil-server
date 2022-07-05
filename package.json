@@ -46,7 +46,7 @@
     "webpack-dev-server": "^4.6.0"
   },
   "peerDependencies": {
-    "civil-client": "github:EnCiv/civil-client#heroku-oom"
+    "civil-client": "github:EnCiv/civil-client#heroku-oom^0.0.6"
   },
   "devDependencies": {
     "@babel/cli": "^7.16.0",
