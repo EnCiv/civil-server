@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "an exctensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -19,8 +19,7 @@
     "postinstall": "bash postinstall.sh",
     "packbuild": "webpack --config webpack-prod.config.js",
     "dev": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server\" \"sleep 15 && npm run hot-client\"",
-    "dev-no-inspect": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server-no-inspect\" \"sleep 15 && npm run hot-client\"",
-    "prestart": "npm run packbuild"
+    "dev-no-inspect": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server-no-inspect\" \"sleep 15 && npm run hot-client\""
   },
   "repository": {
     "type": "git",
@@ -35,6 +34,7 @@
   "optionalDependencies": {
     "@shelf/jest-mongodb": "^2.2.0",
     "concurrently": "^6.4.0",
+    "cypress": "^9.1.1",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
     "husky": "^4.3.8",
@@ -96,6 +96,11 @@
     "webpack": "^5.65.0",
     "webpack-cli": "^4.9.1",
     "webpack-dev-server": "^4.6.0"
+  },
+  "bin": {
+    "logwatch": "./dist/tools/logwatch.js",
+    "mongo-id": "./dist/tools/mongo-id.js",
+    "react-directroy-indexer": "./dist/tools/react-directory-indexer.js"
   },
   "husky": {
     "hooks": {
