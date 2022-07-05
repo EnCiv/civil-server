@@ -18,7 +18,7 @@ echo "transpile ok"
 
 # these are being exported by packages.json.bin{} make them executable it seems to matter more on heroku 
 chmod a+x dist/tools/react-directory-indexer.js dist/tools/mongo-id.js dist/tools/logwatch.js
-
+ls -al node_modules/civil-client/
 npm run packbuild
 
 
