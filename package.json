@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "an exctensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -100,7 +100,7 @@
   "bin": {
     "logwatch": "./dist/tools/logwatch.js",
     "mongo-id": "./dist/tools/mongo-id.js",
-    "react-directroy-indexer": "./dist/tools/react-directory-indexer.js"
+    "react-directory-indexer": "./dist/tools/react-directory-indexer.js"
   },
   "husky": {
     "hooks": {
