@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "an exctensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "hot-server": "nodemon --inspect dist/start.js",
     "hot-server-no-inspect": "nodemon dist/start.js",
     "hot-client": "webpack-dev-server --config webpack-dev.config.js --devtool source-map --host 0.0.0.0",
-    "postinstall": "bash postinstall.sh",
+    "build": "bash build.sh",
     "packbuild": "webpack --config webpack-prod.config.js",
     "dev": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server\" \"sleep 15 && npm run hot-client\"",
     "dev-no-inspect": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server-no-inspect\" \"sleep 15 && npm run hot-client\""
@@ -42,9 +42,13 @@
     "jest-enzyme": "^7.1.2",
     "nodemon": "^2.0.15",
     "prettier": "^2.5.1",
-    "pretty-quick": "^3.1.2"
+    "pretty-quick": "^3.1.2",
+    "webpack-dev-server": "^4.6.0"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "civil-client": "github:EnCiv/civil-client#heroku-oom"
+  },
+  "devDependencies": {
     "@babel/cli": "^7.16.0",
     "@babel/core": "^7.16.0",
     "@babel/plugin-proposal-class-properties": "^7.16.0",
@@ -54,16 +58,19 @@
     "@babel/plugin-transform-runtime": "^7.16.4",
     "@babel/preset-env": "^7.16.4",
     "@babel/preset-react": "^7.16.0",
+    "babel-loader": "^8.2.3",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1"
+  },
+  "dependencies": {
     "@babel/runtime": "^7.16.3",
     "@hapi/joi": "^15.1.0",
     "@sap_oss/node-socketio-stream": "^1.0.3",
     "assert": "^2.0.0",
-    "babel-loader": "^8.2.3",
     "bcrypt": "^5.0.1",
     "body-parser": "^1.19.1",
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
-    "civil-client": "github:EnCiv/civil-client#heroku-oom",
     "classnames": "^2.3.1",
     "cloudinary": "^1.27.1",
     "compression": "^1.7.4",
@@ -92,10 +99,7 @@
     "socket.io": "^4.4.0",
     "socket.io-client": "^4.4.0",
     "stream-browserify": "^3.0.0",
-    "superagent": "^5.3.1",
-    "webpack": "^5.65.0",
-    "webpack-cli": "^4.9.1",
-    "webpack-dev-server": "^4.6.0"
+    "superagent": "^5.3.1"
   },
   "bin": {
     "logwatch": "./dist/tools/logwatch.js",

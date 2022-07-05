@@ -1,8 +1,4 @@
 #!/bin/bash
-mkdir -p ./node_modules/syn
-# on windows environment make sure /tmp exisits so that stream uploads of pictures will work
-mkdir -p /tmp
-mkdir -p ./assets/js
 #
 # create the WebComponents index files
 #
@@ -19,6 +15,9 @@ npm run transpile  || {
   exit 1
 }
 echo "transpile ok"
+
+# these are being exported by packages.json.bin{} make them executable it seems to matter more on heroku 
+chmod a+x dist/tools/react-directory-indexer.js dist/tools/mongo-id.js dist/tools/logwatch.js
 
 npm run packbuild
 
