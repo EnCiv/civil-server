@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+'use strict'
 const fs = require('fs') // require so it runs as is without having to bable it
 const path = require('path')
 
