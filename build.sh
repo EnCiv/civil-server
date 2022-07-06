@@ -18,7 +18,13 @@ echo "transpile ok"
 
 # these are being exported by packages.json.bin{} make them executable it seems to matter more on heroku 
 chmod a+x dist/tools/react-directory-indexer.js dist/tools/mongo-id.js dist/tools/logwatch.js
-ls -al node_modules/civil-client/
-npm run packbuild
+# don't run webpack if this is a dependency of another project - the memory usage will blow out heroku build 
+if test \"$NPM_PROJECT\" = \"\" || test \"$NPM_PROJECT\" == \"civil-server\" ; then {
+  npm run packbuild  || {
+    echo Could not webpack;
+    exit 1
+  }
+}; fi
+
 
 
