@@ -3,7 +3,7 @@
 'use strict'
 
 import theCivilServer from './server/the-civil-server'
-import Iota from './models/Iota'
+import Iota from './models/iota'
 import iotas from '../iotas.json'
 import App from './components/app'
 
