@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "an exctensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -110,5 +110,9 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
+  },
+  "engines": {
+    "npm": "8.13.2",
+    "node": "16.16.0"
   }
 }
