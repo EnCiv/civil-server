@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "an exctensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -46,7 +46,7 @@
     "webpack-dev-server": "^4.6.0"
   },
   "peerDependencies": {
-    "civil-client": "github:EnCiv/civil-client#heroku-oom"
+    "civil-client": "github:EnCiv/civil-client"
   },
   "devDependencies": {
     "@babel/cli": "^7.16.0",
