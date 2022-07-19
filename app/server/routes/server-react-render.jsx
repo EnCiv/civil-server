@@ -29,6 +29,11 @@ function serverReactRender(App, req, res, next) {
   try {
     const dev = process.env.NODE_ENV || 'development'
 
+    const BROWSER_ENV = process.env.BROWSER_ENV || ''
+    const envKeys = BROWSER_ENV.split(',')
+    const browserEnv = envKeys.reduce((env, key) => (key && (env[key] = process.env[key]), env), {})
+    if (!browserEnv.NODE_ENV) browserEnv.NODE_ENV = 'development'
+
     let isIn = null
 
     if (req.cookies && req.cookies.synuser) {
@@ -104,6 +109,9 @@ function serverReactRender(App, req, res, next) {
                     </style>
                     <script>window.reactProps=${JSON.stringify(props) + ''}</script>
                     <script>window.env="${props.env}"</script>
+                    <script>if(!window.process) window.process={}; if(!window.process.env) window.process.env={}; Object.assign(window.process.env, ${JSON.stringify(
+                      browserEnv
+                    )})</script>
                     <script src="https://kit.fontawesome.com/7258b64f3b.js" crossorigin="anonymous" async></script>
                     ${serverReactRender.head.reduce(
                       (str, h) =>

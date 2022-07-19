@@ -304,3 +304,26 @@ Note: use `app/tools/mongo-id` to create a new, unique mongo id and paste it in.
 ### 3) Advanced: Component
 
 If your page should pull data out of the database, or calculate something to pass to the web component, then you can add a component to [app/data-components](./app/data-components) and then add a component: {component: YourComponentNane, ...} to the document above.
+
+## BROWSER_ENV
+
+To pass ENV variables from the Node server to the browser, use
+
+.bashrc:
+
+```
+export BROWSER_ENV=NODE_ENV,HOSTNAME
+```
+
+and
+
+```
+heroku config:set BROWSER_ENV=NODE_ENV,HOSTNAME -a app-name
+```
+
+or set it as a `Config Var` on heroku
+
+Then you will be able to access them through `process.env.NODE_ENV` on the browser too.
+By default, `process.env.NODE_ENV` is set to 'development'
+
+**Do not use this to send secrets to the browser as they are not be secret there**
