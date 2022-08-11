@@ -41,7 +41,7 @@ async function signIn(req, res, next) {
           if (needsUpdate) {
             // update is done in the background - no waiting for success or failure
             User.updateOne({ _id: user._id }, newInfo).catch(err => {
-              logger.err('sign_in trying to update user info failed', err, user, newInfo)
+              logger.error('sign_in trying to update user info failed', err, user, newInfo)
             })
           }
           next()
@@ -54,7 +54,6 @@ async function signIn(req, res, next) {
     next(error)
   }
 }
-
 
 function route() {
   const apiLimiter = expressRateLimit({
