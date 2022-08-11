@@ -117,6 +117,17 @@ function serverReactRender(App, req, res, next) {
                         (typeof h === 'string' ? h : typeof h === 'function' ? h(props, req, res) : ''),
                       ''
                     )}
+                    <script>if(!window.process) window.process={}; if(!window.process.env) window.process.env={}; Object.assign(window.process.env, ${JSON.stringify(
+                      (() => {
+                        const browserEnv =
+                          typeof window === 'undefined' &&
+                          (process.env.BROWSER_ENV || '')
+                            .split(',')
+                            .reduce((env, key) => (key && (env[key] = process.env[key]), env), {})
+                        if (browserEnv && !browserEnv.NODE_ENV) browserEnv.NODE_ENV = 'development'
+                        return browserEnv
+                      })()
+                    )})</script>
                     ${helmet.script.toString()}
                 </head>
                 <body style="margin: 0; padding: 0" ${helmet.bodyAttributes.toString()}>

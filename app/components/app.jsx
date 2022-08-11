@@ -21,30 +21,6 @@ const DynamicFontSizeHelmet =
       )
     : () => null
 
-const BrowserEnvHelmet =
-  typeof window === 'undefined' && typeof process !== 'undefined' && process?.env?.BROWSER_ENV
-    ? () => (
-        <Helmet
-          script={[
-            {
-              type: 'text/javascript',
-              innerHTML: `if(!window.process) window.process={}; if(!window.process.env) window.process.env={}; Object.assign(window.process.env, ${JSON.stringify(
-                (() => {
-                  const browserEnv =
-                    typeof window === 'undefined' &&
-                    (process.env.BROWSER_ENV || '')
-                      .split(',')
-                      .reduce((env, key) => (key && (env[key] = process.env[key]), env), {})
-                  if (browserEnv && !browserEnv.NODE_ENV) browserEnv.NODE_ENV = 'development'
-                  return browserEnv
-                })()
-              )})`,
-            },
-          ]}
-        />
-      )
-    : () => null
-
 class App extends React.Component {
   render() {
     if (this.props.iota) {
@@ -57,7 +33,6 @@ class App extends React.Component {
               <title>{iota?.subject || 'Candiate Conversations'}</title>
             </Helmet>
             <DynamicFontSizeHelmet />
-            <BrowserEnvHelmet />
             <WebComponents key="web-component" webComponent={this.props.iota.webComponent} {...newProps} />
             <Footer key="footer" />
           </div>
