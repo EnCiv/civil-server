@@ -4,6 +4,7 @@ import React from 'react' // needed by render to string
 import { renderToString } from 'react-dom/server'
 import { JssProvider, SheetsRegistry, createGenerateId } from 'react-jss'
 import cloneDeep from 'lodash/cloneDeep'
+import { Helmet } from 'react-helmet'
 
 const googleAnalytics = (props, req, res) =>
   process.env.GOOGLE_ANALYTICS
@@ -29,28 +30,20 @@ function serverReactRender(App, req, res, next) {
   try {
     const dev = process.env.NODE_ENV || 'development'
 
-    const BROWSER_ENV = process.env.BROWSER_ENV || ''
-    const envKeys = BROWSER_ENV.split(',')
-    const browserEnv = envKeys.reduce((env, key) => (key && (env[key] = process.env[key]), env), {})
-    if (!browserEnv.NODE_ENV) browserEnv.NODE_ENV = 'development'
-
-    let isIn = null
-
-    if (req.cookies && req.cookies.synuser) {
-      isIn = req.cookies.synuser
-
-      if (typeof isIn === 'string') {
-        isIn = JSON.parse(isIn)
-      }
-    }
+    const user = req.cookies?.synuser
+      ? typeof req.cookies?.synuser === 'string'
+        ? JSON.parse(req.cookies.synuser)
+        : req.cookies.synuser
+      : undefined
 
     const props = Object.assign(
       {
-        env: dev,
+        env: dev, // depricated should go away one day
         path: req.path,
-        user: isIn,
+        user,
         notFound: req.notFound,
         error: res.locals.error,
+        location: req.url, // may be used by for use by react-router
       },
       cloneDeep(req.reactProps)
     )
@@ -63,6 +56,7 @@ function serverReactRender(App, req, res, next) {
         <App {...props} />
       </JssProvider>
     )
+    const helmet = Helmet.renderStatic()
 
     // figure out if browsers supports ES6 or not.
     const ifES6 = () =>
@@ -81,7 +75,7 @@ function serverReactRender(App, req, res, next) {
       !(
         req.hostname.startsWith('cc2020') || // host is the CDN
         req.hostname.startsWith('undebate-stage1') || // host is stage-1 for testing
-        (props.env === 'production' &&
+        (dev === 'production' &&
           props.iota &&
           props.iota.webComponent &&
           props.iota.webComponent.participants &&
@@ -90,17 +84,23 @@ function serverReactRender(App, req, res, next) {
 
     return res.send(
       `<!doctype html>
-            <html>
+            <html ${helmet.htmlAttributes.toString()}>
                 <head>
-                    <meta charSet="UTF-8"/>
-                    <title>${(props.iota && props.iota.subject) || 'Candidate Conversations'}</title>
+                    ${
+                      helmet.title.toString() === '<title data-react-helmet="true"></title>'
+                        ? `<title>${(props.iota && props.iota.subject) || 'Candidate Conversations'}</title>`
+                        : helmet.title.toString()
+                    }
                     <meta httpEquiv='X-UA-Compatible' content='IE=edge'/>
                     <meta name='viewport' content='width=device-width, maximum-scale=1.0, initial-scale=1.0' />
+                    <meta charSet="UTF-8"/>
+                    ${helmet.meta.toString()}
                     <link rel='icon' type='image.png' href='/assets/images/favicon-16x16.png' sizes='16x16'/>
                     <link rel='icon' type='image/png' href='/assets/images/favicon-32x32.png' sizes='32x32'/>
                     <link rel="apple-touch-icon" sizes="180x180"  href="/assets/images/apple-touch-icon.png" />
                     <link rel="manifest"  href="/assets/images/site.webmanifest"/>
                     <link rel="shortcut icon" href="/assets/images/favicon.ico" />
+                    ${helmet.link.toString()}
                     <meta name="theme-color" content="#ffffff"/>
                     <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
                     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -109,9 +109,6 @@ function serverReactRender(App, req, res, next) {
                     </style>
                     <script>window.reactProps=${JSON.stringify(props) + ''}</script>
                     <script>window.env="${props.env}"</script>
-                    <script>if(!window.process) window.process={}; if(!window.process.env) window.process.env={}; Object.assign(window.process.env, ${JSON.stringify(
-                      browserEnv
-                    )})</script>
                     <script src="https://kit.fontawesome.com/7258b64f3b.js" crossorigin="anonymous" async></script>
                     ${serverReactRender.head.reduce(
                       (str, h) =>
@@ -120,8 +117,9 @@ function serverReactRender(App, req, res, next) {
                         (typeof h === 'string' ? h : typeof h === 'function' ? h(props, req, res) : ''),
                       ''
                     )}
+                    ${helmet.script.toString()}
                 </head>
-                <body style="margin: 0; padding: 0">
+                <body style="margin: 0; padding: 0" ${helmet.bodyAttributes.toString()}>
                     <div id="synapp">${body}</div>
                     ${ifES6()}
                     ${ifLoadSockets() ? '<script src="/socket.io/socket.io.js" ></script>' : ''}
@@ -137,9 +135,6 @@ function serverReactRender(App, req, res, next) {
 }
 
 serverReactRender.head = []
-serverReactRender.head.push(
-  `<script>function setFontSize(){document.getElementsByTagName("html")[0].style.fontSize=Math.round(Math.min(window.innerWidth,window.innerHeight))/100*(15/(1080/100))+'px'}; window.onresize=setFontSize; setFontSize();</script>`
-)
 serverReactRender.head.push(googleAnalytics)
 serverReactRender.head.push(metaTags)
 
