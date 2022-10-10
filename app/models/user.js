@@ -2,6 +2,8 @@
 const Joi = require('@hapi/joi')
 const MongoModels = require('mongo-models')
 const bcrypt = require('bcrypt')
+const { randomString } = require('../tools/random-string')
+const { base64url } = require('../tools/base64url')
 
 const schema = Joi.object({
   _id: Joi.object(),
@@ -10,7 +12,12 @@ const schema = Joi.object({
   password: Joi.string(),
   firstName: Joi.string(),
   lastName: Joi.string(),
+  activationToken: Joi.string().optional().allow(null),
+  activationKey: Joi.string().optional().allow(null),
+  tokenExpirationDate: Joi.date().optional().allow(null),
 })
+
+const TOKEN_EXPIRATION_TIME_MINUTES = 10
 
 class User extends MongoModels {
   static create(user) {
@@ -39,12 +46,13 @@ class User extends MongoModels {
             }
           }
         })
-        return // let bcrypt do it's think
+        return // let bcrypt do its thing
       }
       logger.error(error)
       ko(new Error(error))
     })
   }
+
   validatePassword(plainTextPassword) {
     return new Promise((ok, ko) => {
       bcrypt.compare(plainTextPassword, this.password, (err, res) => {
@@ -55,6 +63,56 @@ class User extends MongoModels {
           ok(res)
         }
       })
+    })
+  }
+
+  async generateTokenAndKey() {
+    await User.updateOne(
+      { _id: this._id },
+      {
+        $set: {
+          activationKey: base64url(randomString(12)),
+          activationToken: base64url(randomString(12)),
+          tokenExpirationDate: new Date(),
+        },
+      }
+    ).catch(err => {
+      logger.error('failed trying to reactivate user', err, this)
+      throw err
+    })
+    console.log('done updating')
+    return await User.findById(this._id)
+  }
+
+  static async resetPassword(activationToken, activationKey, newPassword) {
+    console.log('checking expiration date', activationToken, activationKey, newPassword)
+    await User.findOne({ activationToken, activationKey }).then(user => {
+      console.log('user', user)
+      const tokenExpirationTime = new Date(
+        user.tokenExpirationDate.getTime() + TOKEN_EXPIRATION_TIME_MINUTES * 60 * 1000
+      )
+      if (tokenExpirationTime.getTime() < new Date().getTime()) {
+        throw new Error('token expired')
+      }
+    })
+    console.log('expiration time ok')
+    bcrypt.hash(newPassword, 10, async (err, hash) => {
+      if (err) {
+        logger.error(`reset password hash failed ${err}`)
+        throw new Error(err)
+      }
+      console.log('updating user with hash ' + hash)
+      await User.updateOne(
+        { activationKey, activationToken },
+        {
+          $set: {
+            password: hash,
+            activationKey: null,
+            activationToken: null,
+            tokenExpirationDate: null,
+          },
+        }
+      )
     })
   }
 }

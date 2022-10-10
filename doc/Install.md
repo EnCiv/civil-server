@@ -10,9 +10,9 @@ You will need to install the following, if you do not already have them.
 
 ## Setup
 
-On your browser go to your github account and login
+On your browser go to your GitHub account and login
 
-If you have just installed VSC you need to setup the bash shell. Use Control-Shift-P
+If you have just installed VSC you need to set up the bash shell. Use Control-Shift-P
 In the input field type "Select Default Shell"
 Choose "Git Bash"
 
@@ -33,13 +33,13 @@ Heroku calls them 'apps' but think of it as a server instance in the cloud with 
 Then we add the MongoDB database. It's also in cloud. You will be able to use this one database when you are running locally, and when you are running in the cloud. Follow the instructions in this slide show:
 https://docs.google.com/presentation/d/10fEk_OdfN-dYh9PlqG6nTFlu4ENvis_owdHbqWYDpBI/present?slide=id.gb4a0dbf10b_0_93
 
-Now lets get the environment variable with the URI for that database and store it in your bash configuration file so you can use it when you run locally. This string has a password in it and it should never be shared or commited to a repo. The .gitignore file ignores .bashrc so it won't get added into a repo - just make sure it stays that way.
+Now lets get the environment variable with the URI for that database and store it in your bash configuration file, so you can use it when you run locally. This string has a password in it, and it should never be shared or committed to a repo. The .gitignore file ignores .bashrc so it won't get added into a repo - just make sure it stays that way.
 
 ```
     echo 'export MONGODB_URI="mongodb+srv://any-name-you-want:Znkx8UyAZAV15xRK@cluster0.xtpzi.mongodb.net/anydbname?retryWrites=true&w=majority"' >> .bashrc
 ```
 
-Now lets add the MONGODB_URI to the heroku server:
+Now let's add the MONGODB_URI to the heroku server:
 
 ```
     heroku config:set MONGODB_URI="mongodb+srv://any-name-you-want:Znkx8UyAZAV15xRK@cluster0.xtpzi.mongodb.net/anydbname?retryWrites=true&w=majority"
@@ -58,7 +58,7 @@ Now you should be able to run it.
 
     npm run dev
 
-You should now be able to browser to localhost:3011/candidate-conversation and see an undebate. The server is running locally on our machine. It's using webpack, which is really neat bacuase when you save changes to the source code, it will automatically be compliled and applied to the server and to the application in your browser. You may still have to refresh your browser page though.
+You should now be able to browser to localhost:3011/candidate-conversation and see an undebate. The server is running locally on our machine. It's using webpack, which is really neat because when you save changes to the source code, it will automatically be compiled and applied to the server and to the application in your browser. You may still have to refresh your browser page though.
 
 You can use Control-C to terminate the server
 
@@ -73,7 +73,7 @@ Then, to record your own part in the candidate conversation browser to: localhos
 There are other urls that you can check out in your development environment. To see the latest list do this:
 
 ```
-cat iota.json | grep path
+cat iotas.json | grep path
 ```
 
 Here is the list as of the time of this writing:
@@ -82,7 +82,7 @@ Here is the list as of the time of this writing:
     "path": "/join",
 ```
 
-Just take the url part, like "what-is-democracy" and add either localhost:3011 or https://undebate-[something unique].herokuapp.com at the beginning and you will be able to check it out.
+Just take the url part, like "what-is-democracy" and add either localhost:3011 or https://undebate-[something unique].herokuapp.com at the beginning, and you will be able to check it out.
 
 # Prettier
 

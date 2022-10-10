@@ -143,11 +143,11 @@ To call this API from the browser side you would use
 window.socket.emit('socketlogger', loggingEvent)
 ```
 
-an api function can have any number of parameters, it can also have a call-back as it's final parameter.
+an api function can have any number of parameters, it can also have a call-back as its final parameter.
 
 # Routes Directory
 
-Each file in the directory represents an extension to the express server object- which can be this.app.use(...) this.app.get(...) or this.app.push(...)
+Each file in the directory represents an extension to the express server object - which can be this.app.use(...) this.app.get(...) or this.app.push(...)
 An example is the sign-in route that looks like this:
 
 ```
@@ -206,6 +206,7 @@ serverEvents.emit(serverEvents.eNames.EventName, p1, p2, ...)
 # Web Components Directory
 
 Each file in [web-components](./app/web-components) represents a React Component. When a url matches in the iota collection path property, the web-component named in the document is looked up in the Web Components directory, and is used to render the data in the document.
+After adding a new component to the directory and adding it to iotas.json, you will need to run npm install to update the auto generated index.js file in the directory.
 
 # Contributions
 
@@ -326,4 +327,14 @@ or set it as a `Config Var` on heroku
 Then you will be able to access them through `process.env.NODE_ENV` on the browser too.
 By default, `process.env.NODE_ENV` is set to 'development'
 
-**Do not use this to send secrets to the browser as they are not be secret there**
+**Do not use this to send secrets to the browser as they are not secret there**
+
+# Testing
+
+## Jest tests
+
+`npm run test`
+
+## Cypress tests
+
+`npm run cypress:headless` or `npm run cypress`
