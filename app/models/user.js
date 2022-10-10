@@ -96,24 +96,19 @@ class User extends MongoModels {
       }
     })
     console.log('expiration time ok')
-    bcrypt.hash(newPassword, 10, async (err, hash) => {
-      if (err) {
-        logger.error(`reset password hash failed ${err}`)
-        throw new Error(err)
+    const hash = bcrypt.hashSync(newPassword, 10)
+    console.log('updating user with hash ' + hash)
+    await User.updateOne(
+      { activationKey, activationToken },
+      {
+        $set: {
+          password: hash,
+          activationKey: null,
+          activationToken: null,
+          tokenExpirationDate: null,
+        },
       }
-      console.log('updating user with hash ' + hash)
-      await User.updateOne(
-        { activationKey, activationToken },
-        {
-          $set: {
-            password: hash,
-            activationKey: null,
-            activationToken: null,
-            tokenExpirationDate: null,
-          },
-        }
-      )
-    })
+    )
   }
 }
 

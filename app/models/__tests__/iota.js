@@ -30,7 +30,7 @@ test('the db starts up', async () => {
 
 test('the db has iotas', async () => {
   const iotas = await Iota.find({})
-  expect(iotas.length).toBe(1)
+  expect(iotas.length).toBeGreaterThan(0)
   // this will fail if there are other test running and putting things in the database
 })
 
