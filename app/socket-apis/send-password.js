@@ -1,29 +1,50 @@
 'use strict'
 
 import User from '../models/user'
-// import sendEmail from '../server/util/send-email'
-import configValues from '../../public.json'
+import { SibGetTemplateId, SibSendTransacEmail } from '../tools/send-in-blue-transactional'
 
-// todo convert this into SendInBlue
-const EMAIL_TEMPLATE =
-  'Hello,\r\n\r\n' +
-  'You are receiving this email because you requested a password reset.\r\n\r\n' +
-  'Your reset key is:\r\n\r\n' +
-  '\t{key}\r\n\r\n' +
-  'To reset your password, copy the reset key above and go to {url}\r\n\n\n' +
-  'Thank you,\n' +
-  'EnCiv'
+let templateId
+
+async function sendResetPasswordEmail(host, toAddress, activationKey, activationToken, returnToPath) {
+  logger.debug('sending password reset email to ', toAddress)
+  if (!templateId) {
+    templateId = await SibGetTemplateId('reset-password')
+    if (!templateId) {
+      logger.error('reset-password template not found')
+      return false
+    }
+  }
+  console.log('template id found: ', templateId)
+
+  // todo change protocol
+  const resetPasswordUrl = `http://${host}/resetPassword?t=${activationToken}&p=${returnToPath}`
+
+  const messageProps = {
+    to: [{ email: toAddress }],
+    sender: {
+      name: 'EnCiv.org',
+      email: process.env.SENDINBLUE_DEFAULT_FROM_EMAIL,
+    },
+    templateId,
+    tags: ['reset-password'],
+    params: {
+      resetPasswordUrl: resetPasswordUrl,
+      activationKey: activationKey,
+    },
+  }
+
+  console.log('about to send email: ', messageProps)
+  const result = await SibSendTransacEmail(messageProps)
+  console.log('send result:', result)
+  if (!result || !result.messageId) {
+    logger.error('resetPassword email failed')
+  }
+  return !!result
+}
 
 async function sendPassword(email, returnTo, cb) {
   console.log('send-password called')
   const { host } = this.handshake.headers
-
-  function emailBody(key, token) {
-    return EMAIL_TEMPLATE.replace(/\{key}/g, key).replace(
-      /\{url}/g,
-      `http://${host}/resetPassword?t=${token}&p=${returnTo}`
-    )
-  }
 
   await User.findOne({ email })
     .then(async user => {
@@ -34,13 +55,17 @@ async function sendPassword(email, returnTo, cb) {
         console.log('user found. doing stuff', user)
         user = await user.generateTokenAndKey()
         console.log('after update', user)
-        // await user.resetPassword('SkRlnvrXLGJu', 'QqIYMKH6wjyk', 'newPassword')
-        console.log({
-          from: configValues.sendEmailFrom,
-          to: email,
-          subject: 'Reset password',
-          text: emailBody(user.activationKey, user.activationToken),
-        })
+
+        const sendResetSuccess = await sendResetPasswordEmail(
+          host,
+          email,
+          user.activationKey,
+          user.activationToken,
+          returnTo
+        )
+        if (!sendResetSuccess) {
+          cb('error sending reset password email')
+        }
       }
     })
     .catch(error => cb({ error: error.message }))
