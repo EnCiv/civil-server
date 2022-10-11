@@ -44,6 +44,12 @@ describe('create method', () => {
   })
 })
 
+test('validatePassword method', async () => {
+  const user = new User({ password: '$2b$10$PEA9iHuap7j24h.yR2zOjOr5hOhX131zS6.iwXjmxMXCVh9zUsfPq' })
+  expect(await user.validatePassword('nottherightpassword')).toBeFalsy()
+  expect(await user.validatePassword('password')).toBeTruthy()
+})
+
 test('generateTokenAndKey method', async () => {
   const email = 'generateUser@email.com'
   const dbUser = {
@@ -59,7 +65,6 @@ test('generateTokenAndKey method', async () => {
   expectedDbUser.password = expect.stringMatching(HASHED_PASSWORD_REGEX)
   expectedDbUser.activationKey = expect.stringMatching(BASE_64_REGEX)
   expectedDbUser.activationToken = expect.stringMatching(BASE_64_REGEX)
-  // expectedDbUser.tokenExpirationDate = expect.dateMatching()
 
   expect(user).toMatchObject(expectedDbUser)
 })
@@ -103,11 +108,9 @@ describe('resetPassword method', () => {
 
   test('happy reset', async () => {
     const newPassword = 'newPassword'
-    console.log('before update', user)
     await User.resetPassword(activationToken, activationKey, newPassword)
 
     const updatedUser = await User.findOne({ email: 'resetUser@email.com' })
-    console.log('updated user', updatedUser)
     const expectedDbUser = dbUser
     expectedDbUser.activationKey = null
     expectedDbUser.activationToken = null

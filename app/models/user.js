@@ -80,14 +80,11 @@ class User extends MongoModels {
       logger.error('failed trying to reactivate user', err, this)
       throw err
     })
-    console.log('done updating')
     return await User.findById(this._id)
   }
 
   static async resetPassword(activationToken, activationKey, newPassword) {
-    console.log('checking expiration date', activationToken, activationKey, newPassword)
     await User.findOne({ activationToken, activationKey }).then(user => {
-      console.log('user', user)
       const tokenExpirationTime = new Date(
         user.tokenExpirationDate.getTime() + TOKEN_EXPIRATION_TIME_MINUTES * 60 * 1000
       )
@@ -95,9 +92,7 @@ class User extends MongoModels {
         throw new Error('token expired')
       }
     })
-    console.log('expiration time ok')
     const hash = bcrypt.hashSync(newPassword, 10)
-    console.log('updating user with hash ' + hash)
     await User.updateOne(
       { activationKey, activationToken },
       {
