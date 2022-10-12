@@ -1,4 +1,8 @@
 describe('User', () => {
+  before(() => {
+    cy.exec("npm run mongo:delete-user -- 'cypress@example.com'")
+  })
+
   it('can join the app', () => {
     cy.visit('/join')
     cy.contains('Join')
