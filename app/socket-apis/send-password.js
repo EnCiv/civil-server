@@ -14,7 +14,7 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
       return false
     }
   }
-  console.log('template id found: ', templateId)
+  logger.debug('template id found: ', templateId)
 
   // todo change protocol
   const resetPasswordUrl = `http://${host}/resetPassword?t=${activationToken}&p=${returnToPath}`
@@ -33,9 +33,8 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
     },
   }
 
-  console.log('about to send email: ', messageProps)
+  logger.debug('about to send email')
   const result = await SibSendTransacEmail(messageProps)
-  console.log('send result:', result)
   if (!result || !result.messageId) {
     logger.error('resetPassword email failed')
   }
@@ -43,7 +42,6 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
 }
 
 async function sendPassword(email, returnTo, cb) {
-  console.log('send-password called')
   const { host } = this.handshake.headers
 
   await User.findOne({ email })
@@ -52,9 +50,8 @@ async function sendPassword(email, returnTo, cb) {
         logger.warn('no user found with email:', email)
         cb({ error: 'User not found' })
       } else {
-        console.log('user found. doing stuff', user)
+        logger.debug('user found. generating token and key')
         user = await user.generateTokenAndKey()
-        console.log('after update', user)
 
         const sendResetSuccess = await sendResetPasswordEmail(
           host,
@@ -69,7 +66,6 @@ async function sendPassword(email, returnTo, cb) {
       }
     })
     .catch(error => cb({ error: error.message }))
-  console.log('done resetting')
   cb()
 }
 

@@ -4,6 +4,8 @@ import User from '../models/user'
 import expressRateLimit from 'express-rate-limit'
 import sendUserId from '../server/util/send-user-id'
 
+const env = process.env.NODE_ENV || 'development'
+
 async function signIn(req, res, next) {
   try {
     const { password, ..._body } = req.body // don't let the password appear in the logs
@@ -56,10 +58,19 @@ async function signIn(req, res, next) {
 }
 
 function route() {
+  let signInAttemptWindow
+  let signInWindowMessage
+  if (env === 'development') {
+    signInAttemptWindow = 60 * 1000
+    signInWindowMessage = '60 seconds'
+  } else {
+    signInAttemptWindow = 24 * 60 * 60 * 1000
+    signInWindowMessage = '24 hours'
+  }
   const apiLimiter = expressRateLimit({
-    windowMs: 60 * 1000,
+    windowMs: signInAttemptWindow,
     max: 2,
-    message: 'Too many attempts logging in, please try again after 24 hours.',
+    message: 'Too many attempts logging in, please try again after ' + signInWindowMessage + '.',
   })
   this.app.post('/sign/in', apiLimiter, signIn, this.setUserCookie, sendUserId)
 }
