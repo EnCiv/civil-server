@@ -1,7 +1,7 @@
 'use strict'
 
 import User from '../models/user'
-import { SibGetTemplateId, SibSendTransacEmail } from '../tools/send-in-blue-transactional'
+import { SibGetTemplateId, SibSendTransacEmail } from '../lib/send-in-blue-transactional'
 
 let templateId
 
@@ -42,6 +42,7 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
 }
 
 async function sendPassword(email, returnTo, cb) {
+  logger.debug(this.handshake.headers) // todo remove this
   const { host } = this.handshake.headers
 
   await User.findOne({ email })

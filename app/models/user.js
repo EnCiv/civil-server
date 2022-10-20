@@ -2,8 +2,8 @@
 const Joi = require('@hapi/joi')
 const MongoModels = require('mongo-models')
 const bcrypt = require('bcrypt')
-const { randomString } = require('../tools/random-string')
-const { base64url } = require('../tools/base64url')
+const { randomString } = require('../lib/random-string')
+const { base64url } = require('../lib/base64url')
 
 const schema = Joi.object({
   _id: Joi.object(),
