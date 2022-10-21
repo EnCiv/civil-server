@@ -16,8 +16,8 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
   }
   logger.debug('template id found: ', templateId)
 
-  // todo change protocol
-  const resetPasswordUrl = `http://${host}/resetPassword?t=${activationToken}&p=${returnToPath}`
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const resetPasswordUrl = `${protocol}://${host}/resetPassword?t=${activationToken}&p=${returnToPath}`
 
   const messageProps = {
     to: [{ email: toAddress }],
@@ -42,7 +42,6 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
 }
 
 async function sendPassword(email, returnTo, cb) {
-  logger.debug(this.handshake.headers) // todo remove this
   const { host } = this.handshake.headers
 
   await User.findOne({ email })
