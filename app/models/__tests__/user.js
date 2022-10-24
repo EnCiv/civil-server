@@ -112,9 +112,9 @@ describe('resetPassword method', () => {
 
     const updatedUser = await User.findOne({ email: 'resetUser@email.com' })
     const expectedDbUser = dbUser
-    expectedDbUser.activationKey = null
-    expectedDbUser.activationToken = null
-    expectedDbUser.tokenExpirationDate = null
+    expectedDbUser.activationKey = ''
+    expectedDbUser.activationToken = ''
+    expectedDbUser.tokenExpirationDate = ''
     expectedDbUser.password = expect.stringMatching(HASHED_PASSWORD_REGEX)
 
     expect(updatedUser).toMatchObject(expectedDbUser)

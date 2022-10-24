@@ -12,9 +12,9 @@ const schema = Joi.object({
   password: Joi.string(),
   firstName: Joi.string(),
   lastName: Joi.string(),
-  activationToken: Joi.string().optional().allow(null),
-  activationKey: Joi.string().optional().allow(null),
-  tokenExpirationDate: Joi.date().optional().allow(null),
+  activationToken: Joi.string().optional().allow(''),
+  activationKey: Joi.string().optional().allow(''),
+  tokenExpirationDate: Joi.date().optional().allow(''),
 })
 
 const TOKEN_EXPIRATION_TIME_MINUTES = 10
@@ -98,9 +98,9 @@ class User extends MongoModels {
       {
         $set: {
           password: hash,
-          activationKey: null,
-          activationToken: null,
-          tokenExpirationDate: null,
+          activationKey: '',
+          activationToken: '',
+          tokenExpirationDate: '',
         },
       }
     )
