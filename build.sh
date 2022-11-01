@@ -4,6 +4,7 @@
 #
 # we need to do this before we can babel-transpile the whole project
 # first we need to babel-transpile the web-components template so we can use it in the indexer
+ls node_modules/.bin
 babel app/components/web-components-template.jsx app/components/data-components-template.js --ignore **/__tests__ --out-dir dist/components --source-maps
 # then we need to babel-transpile the indexer, and create the web-components index 
 babel app/tools/react-directory-indexer.js --ignore **/__tests__ --out-dir dist/tools --source-maps
