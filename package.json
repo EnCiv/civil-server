@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "an extensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -20,7 +20,8 @@
     "prepare": "bash build.sh",
     "packbuild": "webpack --config webpack-prod.config.js",
     "dev": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server\" \"sleep 15 && npm run hot-client\"",
-    "dev-no-inspect": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server-no-inspect\" \"sleep 15 && npm run hot-client\""
+    "dev-no-inspect": "echo \"these delays need to be kept up to date\" && concurrently -k \"npm run hot-transpile\" \"sleep 20 && npm run hot-server-no-inspect\" \"sleep 15 && npm run hot-client\"",
+    "dbtest": "node --inspect-brk node_modules/jest/bin/jest.js --runInBand --config ./jest-db.config.js --runTestsByPath"
   },
   "repository": {
     "type": "git",
@@ -87,8 +88,8 @@
     "log4js": "git+https://github.com/ddfridley/log4js-node.git#onbrowser",
     "log4js-extend": "^0.2.1",
     "marked": "^4.0.7",
-    "mongo-models": "^3.0.4",
-    "mongodb": "^3.6.9",
+    "mongo-models": "file:../../mongo-models",
+    "mongodb": "^4.12.0",
     "nodemailer": "^6.7.2",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",

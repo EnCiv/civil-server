@@ -3,7 +3,7 @@ const MongoModels = require('mongo-models')
 const Joi = require('@hapi/joi')
 const publicConfig = require('../../public.json')
 
-// DON'T USER LOGGER IN THIS FILE - it will create a loop
+// DON'T USE LOGGER IN THIS FILE - it will create a loop
 
 class Log extends MongoModels {
   static create(obj) {
@@ -15,9 +15,9 @@ class Log extends MongoModels {
         }
         const doc = new Log(obj)
         const result = await this.insertOne(doc)
-        if (result && result.length === 1) ok(result[0])
+        if (result && result.acknowledged) ok(doc)
         else {
-          console.error(`Log.create unexpected number of results received ${results.length}`)
+          console.error(`Log.create failed ${JSON.stringify(result)}`)
           ok() // if there's an error just keep going don't ko()
         }
       } catch (err) {

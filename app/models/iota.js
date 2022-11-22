@@ -55,9 +55,10 @@ class Iota extends MongoModels {
       try {
         const doc = new Iota(obj)
         const result = await this.insertOne(doc)
-        if (result && result.length === 1) ok(result[0])
+        // driver will add _id to doc if it's not already there
+        if (result && result.acknowledged) ok(doc)
         else {
-          const msg = `unexpected number of results received ${results.length}`
+          const msg = `Iota.insertOne failes ${JSON.stringify(result)}`
           logger.error(msg)
           ko(new Error(msg))
         }

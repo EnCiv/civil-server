@@ -36,9 +36,10 @@ class User extends MongoModels {
             const doc = new User(user)
             try {
               const result = await this.insertOne(doc)
-              if (result && result.length === 1) ok(result[0])
+              // driver will mutate doc with _id if it wasn't there
+              if (result && result.acknowledged) ok(doc)
               else {
-                logger.error((error = `unexpected number of results received ${results.length}`))
+                logger.error((error = `User.insertOne failed, got result ${JSON.stringify(result)}`))
                 ko(new Error(error))
               }
             } catch (err) {

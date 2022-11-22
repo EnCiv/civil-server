@@ -7,7 +7,12 @@ if (!global.logger) {
 }
 
 beforeAll(async () => {
-  await MongoModels.connect({ uri: global.__MONGO_URI__ }, { useUnifiedTopology: true })
+  debugger
+  try {
+    await MongoModels.connect({ uri: global.__MONGO_URI__ }, { useUnifiedTopology: true })
+  } catch (err) {
+    console.error('caught error trying to connect', err)
+  }
   const { toInit = [] } = MongoModels.toInit
   MongoModels.toInit = []
   for await (const init of toInit) await init()
