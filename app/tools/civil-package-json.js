@@ -1,14 +1,9 @@
 #!/usr/bin/env node
-const package = require('./package.json')
-const civilPackage = require('node_modules/civil-server/package')
-const cloneDeep = require('lodash').cloneDeep
-
-
 const fs = require('fs')
 
 const sections = ['optionalDependencies', 'devDependencies', 'peerDependencies', 'scripts']
 
-function mergeDeps(newPackage, section, changes) {
+function mergeDeps(newPackage, civilPackage, section, changes) {
     Object.keys(civilPackage[section]).forEach(key => {
         if (!newPackage[section]) {
             newPackage[section] = {}
@@ -24,9 +19,15 @@ function mergeDeps(newPackage, section, changes) {
 }
 
 function main() {
-    let newPackage = cloneDeep(package)
+    let newPackage = JSON.parse(fs.readFileSync('./package.json'))
+    const civilPackage = JSON.parse(fs.readFileSync('./node_modules/civil-server/package.json'))
     let changes = { count: 0 }
-    sections.forEach(section => mergeDeps(newPackage, section, changes))
+    sections.forEach(section => mergeDeps(newPackage, civilPackage, section, changes))
+    if (newPackage.dependencies['civil-server']) {
+        newPackage.peerDependencies['civil-server'] = newPackage.dependencies['civil-server']
+        delete newPackage.dependencies['civil-server']
+        changes.count++
+    }
     if (changes.count > 0)
         fs.writeFileSync('./package.json', JSON.stringify(newPackage, null, 2))
 }
