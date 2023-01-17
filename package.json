@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.20",
+  "version": "0.0.25",
   "description": "an extensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "cypress": "cypress open",
     "cypress:headless": "cypress run --headless --browser chrome",
     "mongo:delete-user": "bash -c 'mongo --eval \"db.users.remove({email: \\\"$0\\\"})\"'",
-    "svgr": "svgr --icon --filename-case kebab assets/svg --out-dir app/svgr && rm app/svgr/index.js",
+    "svgr": "svgr --icon --filename-case kebab assets/svg --out-dir app/svgr",
     "transpile": "babel app --ignore **/__tests__ --out-dir dist --source-maps",
     "hot-transpile": "babel --watch app --ignore **/__tests__ --out-dir dist --source-maps",
     "hot-server": "nodemon --inspect dist/start.js",
@@ -105,7 +105,8 @@
     "superagent": "^5.3.1"
   },
   "bin": {
-    "logwatch": "./dist/tools/logwatch.js",
+    "do-civil": "./app/tools/do-civil.sh",
+    "logwatch": "./app/tools/logwatch.js",
     "mongo-id": "./dist/tools/mongo-id.js",
     "react-directory-indexer": "./dist/tools/react-directory-indexer.js"
   },
@@ -115,7 +116,6 @@
     }
   },
   "engines": {
-    "npm": "8.13.2",
     "node": "16.16.0"
   }
 }
