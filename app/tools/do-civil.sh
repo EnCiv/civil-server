@@ -9,5 +9,5 @@ source nvs.sh use $NODE_VERSION
 node node_modules/civil-server/app/tools/civil-package-json.js
 if [ ! -f .bashrc ]; then
     echo "Setting .bshrc"
-    template/bashrcsetup.sh
+    ./bashrcsetup.sh
 fi

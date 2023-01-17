@@ -1,3 +1,7 @@
+# Assets (except svg files) should not be put into the repo
+assets/images
+assets/webpack
+
 # Logs
 logs
 *.log
@@ -76,8 +80,9 @@ backups/
 #private stuff 
 _netrc
 .vscode/launch.*
-.idea
 yarn.lock
+.idea/
+*~
 
 # svgr files are generated from assets/svg using svgr
 app/svgr
@@ -86,12 +91,22 @@ app/svgr
 cypress/videos
 cypress/screenshots
 
-#this index is auto generated
+#web-components index is auto generated
 app/web-components/index.js
 app/data-components/index.js
+
+#less history
+.lesshst
+
+#temp directory
+tmp
+
+#directories that might contain secrets
+.ssh/
 
 #this is used by Jest-mongodb for testing only -
 globalConfig.json
 
-#less history frequently genereated by the bash shell
-.lesshst
+#mac auomatically makes this files
+*/.DS_Store
+.DS_Store

@@ -7,7 +7,7 @@ export default {
     component: App,
     argTypes: {},
 }
-
+if (!global.logger) global.logger = console
 const Template = args => <App {...args} />
 
 export const Home = Template.bind({})
