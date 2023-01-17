@@ -7,11 +7,11 @@ Demo at https://civil-server.herokuapp.com
 The idea is that Civil Server is a component with some basic funcationality that will be useful to a lot of projects.
 Some projects may take this and add more features and create a component out of that will be useful to other projects.
 
-To get started with contributing to this project, follow the instructions to install the [civil-server-template](https://github.com/EnCiv/civil-server-template)
-
 And when changes/improvements are made to this project, they can be easilly updated in other projects.
 
-**Copyright 2021 EnCiv, Inc.** This work is licensed under the terms described in [LICENSE.txt](https://github.com/EnCiv/civil-server/blob/master/LICENSE.txt) which is an MIT license with a [Public Good License Condition](https://github.com/EnCiv/undebate#the-need-for-a-public-good-license-condition).
+In addition, projects/repos that use the civil-server can be imported in other projects that use the civil-server, makeing it possible to break large server projects into smaller components, each of which can be build and tested separately.
+
+**Copyright 2021-2023 EnCiv, Inc.** This work is licensed under the terms described in [LICENSE.txt](https://github.com/EnCiv/civil-server/blob/master/LICENSE.txt) which is an MIT license with a [Public Good License Condition](https://github.com/EnCiv/undebate#the-need-for-a-public-good-license-condition).
 
 # Features
 
@@ -30,7 +30,19 @@ And when changes/improvements are made to this project, they can be easilly upda
 
 # How to use it
 
-_start.js_
+To create a new project from scratch
+```
+mkdir new-project
+cd new-project
+npm init #answer the questions as you want for your project
+npm install github:EnCiv/civil-server
+node_modules/.bin/do-civil
+````
+Your project directory is now ready for you.
+
+`npm run storybook` and `npm run dev` will now work.
+
+_app/start.js_
 
 ```
 "use strict";
@@ -217,14 +229,6 @@ Contributions are accepted under the MIT License without additional conditions. 
 You will need a github.com account, and a heroku.com account. Heroku is like a server in the cloud that you can push git repo's to, and after you push, heroku will build and run them. It's also great because they give you free accounts that you can use for development.
 
 The install instructions are **[here](./doc/Install.md)**
-
-# To Include Civil Server in an existing project
-
-```
-npm install git+https://github.com/EnCiv/civil-server.git#main
-```
-
-Make a copy of [start.js](https://github.com/EnCiv/civil-server-template/blob/main/app/start.js) and put it in `app/start.js`
 
 ## How to add a new web page to the server
 
