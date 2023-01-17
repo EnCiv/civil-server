@@ -28,7 +28,7 @@ function main() {
   sections.forEach(section => {
     civilPackage[section] = { ...civilClientPackage[section], ...civilServerPackage[section] }
   })
-  if (civilPackage.scripts.test === npmTestDefault) civilPackage.scripts.test = ''
+  if (newPackage?.scripts?.test === npmTestDefault) newPackage.scripts.test = ''
   let changes = { count: 0 }
   sections.forEach(section => mergeDeps(newPackage, civilPackage, section, changes))
   if (newPackage.dependencies['civil-server']) {
