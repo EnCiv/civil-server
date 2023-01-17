@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "description": "an extensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
