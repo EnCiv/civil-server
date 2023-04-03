@@ -36,6 +36,7 @@ You will need to install the following, if you do not already have them.
 2. Node.js: https://nodejs.org/en/download/
 3. I use visual studio code, but you can use another environment, but you will need to be able to run git-bash terminal windows in your environment.
    https://code.visualstudio.com/
+4. This project uses node version 16.16.0.  I've found that different projects need to use different versions of node I have I started using node version manager [nvs](https://github.com/jasongin/nvs) to do it.  If you use that, you can say `nvs install v16.16.0` and then `nvs use v16.16.0` and it's really ease to switch versions in different directories. 
 
 ## Setup
 
