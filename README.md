@@ -2,8 +2,6 @@
 
 This is a node server, as a component that can be included in other projects and extended for use by other projects. It is spun out from the [undebate](https://github.com/EnCiv/undebate) project so that it can be used as a common component of many projects.
 
-Demo at https://civil-server.herokuapp.com
-
 The idea is that Civil Server is a component with some basic funcationality that will be useful to a lot of projects.
 Some projects may take this and add more features and create a component out of that will be useful to other projects.
 
