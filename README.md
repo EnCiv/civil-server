@@ -29,54 +29,22 @@ In addition, projects/repos that use the civil-server can be imported in other p
 - **Loader.io verification** for load testing
 
 # Getting Started
+Follow these instructions to setup the civil-server repo:
+See [Getting Started - Repo-Setup](https://github.com/EnCiv/.github/wiki/Getting-Started-%E2%80%90-Repo-Setup)
 
-You will need to install the following, if you do not already have them.
-
-1. Git: On windows go to https://git-scm.com/download/win and install it. If you are on a Mac, install brew first, https://brew.sh/ and then `brew install git`
-2. Node.js: https://nodejs.org/en/download/
-3. I use visual studio code, but you can use another environment, but you will need to be able to run git-bash terminal windows in your environment.
-   https://code.visualstudio.com/
-4. This project uses node version 16.16.0.  I've found that different projects need to use different versions of node I have I started using node version manager [nvs](https://github.com/jasongin/nvs) to do it.  If you use that, you can say `nvs install v16.16.0` and then `nvs use v16.16.0` and it's really ease to switch versions in different directories. 
-
-## Setup
-
-On your browser go to your github account and login
-
-If you have just installed VSC you need to setup the bash shell. Use Control-Shift-P
-In the input field type "Select Default Shell"
-Choose "Git Bash"
-
-Then open a git-bash shell - on VSC use Control-\`
+## Run it
 
 ```
-    git clone https://github.com/EnCiv/civil-server.git
-    cd civil-server
-    npm install
-```
-
-### MongoDB
-
-This app uses MONGODB and you will need a mongodb uri to get started. Cloud.mongodb.com has free accounts, you can go there and follow these [instructions](https://docs.google.com/presentation/d/10fEk_OdfN-dYh9PlqG6nTFlu4ENvis_owdHbqWYDpBI/present?slide=id.gb4a0dbf10b_0_93)
-
-you should end up with a .bashrc file that looks like this
-
-```
-#!/bin/bash
-export NODE_ENV="development"
-export MONGODB_URI="mongodb+srv://user-name:secret-password@cluster0.vwxyz.mongodb.net/db-name?retryWrites=true&w=majority"
-```
-
-Note that it's confusing but user-name and db-name can be anything. You pick them when you create the database, and you use them in this URI string. That's all.
-
-### Run it
-
-```
-source .bashrc
 npm run dev
 ```
 
 You will now be able to go to http://localhost:3011
 
+# Contributing
+When you are ready to contribute please see these notes:
+
+- [React Coding and Style Guidelines](https://github.com/EnCiv/.github/wiki/React-Coding-and-Style-Guidelines)
+- [Contributing](https://github.com/EnCiv/.github/wiki/Contributing)
 
 # How to use it
 
