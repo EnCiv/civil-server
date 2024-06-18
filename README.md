@@ -49,7 +49,7 @@ When you are ready to contribute please see these notes:
 # How to use it
 
 To create a new project from scratch
-```
+```bash
 mkdir new-project
 cd new-project
 npm init #answer the questions as you want for your project
@@ -62,7 +62,7 @@ Your project directory is now ready for you.
 
 _app/start.js_
 
-```
+```js
 "use strict";
 
 const path=require('path')
@@ -94,7 +94,7 @@ start()
 
 App is your outer wrapper React App for the whole web site. A minimal version looks like this:
 
-```
+```js
 import React from 'react'
 import { hot } from 'react-hot-loader'
 import WebComponents from '../web-components'
@@ -132,7 +132,7 @@ export default hot(module)(App)
 All of a sites pages will be based on WebComponents that are defined other React components as defined in app/web-components.
 You will learn more about this as we go, but for each page on the site, you will create an object in Iotas.json that says the path, and the WebComponent like this
 
-```
+```js
 [
   ...
   {
@@ -156,7 +156,7 @@ Each file in the directory represents an api call. The root of the name of the f
 
 One api that is predefined in this module is socketlogger.js
 
-```
+```js
 'use strict'
 
 function socketlogger(loggingEvent) {
@@ -169,7 +169,7 @@ export default socketlogger
 
 To call this API from the browser side you would use
 
-```
+```js
 window.socket.emit('socketlogger', loggingEvent)
 ```
 
@@ -180,7 +180,7 @@ an api function can have any number of parameters, it can also have a call-back 
 Each file in the directory represents an extension to the express server object - which can be this.app.use(...) this.app.get(...) or this.app.push(...)
 An example is the sign-in route that looks like this:
 
-```
+```js
 import expressRateLimit from 'express-rate-limit'
 import sendUserId from '../util/send-user-id'
 
@@ -208,11 +208,13 @@ The default function of the file will be called with this of the express object.
 
 # Events Dirctory
 
+__Note:__ Event's aren't used much and there may be better ways now.
+
 Within the server, components can listen for and generate events. Each file in the events directory represents an event listener, and can define the name of an Event.
 
 To create an event listener create a file in app/events like this:
 
-```
+```js
 import { serverEvents } from 'civil-server'
 
 function eventListener(p1,p2,...){
@@ -225,7 +227,7 @@ serverEvents.on(serverEvents.eNames.EventName, eventListener)
 
 In the code that is going to generate the event, do this:
 
-```
+```js
 import { Iota, serverEvents } from 'civil-server'
 
 serverEvents.eNameAdd('EventName')
@@ -256,7 +258,7 @@ Here is the flow. When a user visits the server with a url, `getIota()` in [get-
 
 here is a simple one, ./app/web-components/undebate-iframes.js:
 
-```
+```js
 'use strict'
 
 import React from 'react'
@@ -308,7 +310,7 @@ export default injectSheet(styles)(UndebateIframes)
 
 The example is the minimum information required. Any additional properties you add to webComponent will be passed as props to the associated React component.
 
-```
+```json
 [ ...,
   {
       "_id": {"$oid": "60d25dc95185ab71b8fa44a0"},
@@ -334,13 +336,13 @@ To pass ENV variables from the Node server to the browser, use
 
 .bashrc:
 
-```
+```bash
 export BROWSER_ENV=NODE_ENV,HOSTNAME
 ```
 
 and
 
-```
+```bash
 heroku config:set BROWSER_ENV=NODE_ENV,HOSTNAME -a app-name
 ```
 
