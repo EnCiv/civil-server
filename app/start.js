@@ -7,7 +7,7 @@ import Iota from './models/iota'
 import iotas from '../iotas.json'
 import App from './components/app'
 
-Iota.load(iotas)
+Iota.preload(iotas)
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 async function start() {

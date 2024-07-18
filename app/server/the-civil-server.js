@@ -12,7 +12,7 @@ import serverReactRender from './routes/server-react-render'
 import fetchHandlers from './util/fetch-handlers'
 import serverEvents from './server-events'
 import log4js from 'log4js'
-import MongoModels from 'mongo-models'
+import { Mongo } from '@enciv/mongo-collections'
 import mongologger from './util/mongo-logger'
 import path from 'path'
 import App from '../components/app'
@@ -107,11 +107,7 @@ class HttpServer {
       // heroku is going to delete the MONGODB_URI var on Nov10 - we need something else to use in the mean time
       const MONGODB_URI = process.env.PRIMARYDB_URI || process.env.MONGODB_URI
       if (!MONGODB_URI) ko(new Error('Missing PRIMARYDB_URI or MONGODB_URI'))
-      await MongoModels.connect({ uri: MONGODB_URI }, { useUnifiedTopology: true })
-      // any models that need to createIndexes will push their init function
-      for await (const init of MongoModels.toInit) {
-        await init()
-      }
+      await Mongo.connect(MONGODB_URI, { useUnifiedTopology: true })
       return ok()
     })
   }

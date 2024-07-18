@@ -1,4 +1,5 @@
-const MongoModels = require('mongo-models')
+const { Mongo } = require('@enciv/mongo-collections')
+import { MongoMemoryServer } from 'mongodb-memory-server'
 const Iota = require('../iota')
 
 // dummy out logger for tests
@@ -6,15 +7,16 @@ if (!global.logger) {
   global.logger = console
 }
 
+let MemoryServer
 beforeAll(async () => {
-  await MongoModels.connect({ uri: global.__MONGO_URI__ }, { useUnifiedTopology: true })
-  const { toInit = [] } = MongoModels.toInit
-  MongoModels.toInit = []
-  for await (const init of toInit) await init()
+  MemoryServer = await MongoMemoryServer.create()
+  const uri = MemoryServer.getUri()
+  await Mongo.connect(uri)
 })
 
 afterAll(async () => {
-  MongoModels.disconnect()
+  Mongo.disconnect()
+  MemoryServer.stop()
 })
 
 test('the db is empty', async () => {
@@ -29,7 +31,7 @@ test('the db starts up', async () => {
 })
 
 test('the db has iotas', async () => {
-  const iotas = await Iota.find({})
+  const iotas = await Iota.find({}).toArray()
   expect(iotas.length).toBeGreaterThan(0)
   // this will fail if there are other test running and putting things in the database
 })
