@@ -9,7 +9,7 @@ And when changes/improvements are made to this project, they can be easilly upda
 
 In addition, projects/repos that use the civil-server can be imported in other projects that use the civil-server, makeing it possible to break large server projects into smaller components, each of which can be build and tested separately.
 
-**Copyright 2021-2023 EnCiv, Inc.** This work is licensed under the terms described in [LICENSE.txt](https://github.com/EnCiv/civil-server/blob/master/LICENSE.txt) which is an MIT license with a [Public Good License Condition](https://github.com/EnCiv/undebate#the-need-for-a-public-good-license-condition).
+**Copyright 2021-2024 EnCiv, Inc.** This work is licensed under the terms described in [LICENSE.txt](https://github.com/EnCiv/civil-server/blob/master/LICENSE.txt) which is an MIT license with a [Public Good License Condition](https://github.com/EnCiv/undebate#the-need-for-a-public-good-license-condition).
 
 # Features
 
@@ -26,7 +26,17 @@ In addition, projects/repos that use the civil-server can be imported in other p
 - **Log4js from the browser** for debugging
 - **Loader.io verification** for load testing
 
+# changes from 0.0.27 to 1.0.0
+
+- using Mongo-collection to replace mongo-models
+- for the models Iota, and User methods like .find() no longer return documents they return a cursor and .toArray() will work
+- the documents returned from methods like .findOne() or .toArray() are plain object, not of the User or Iota class. To make them of the class do `new User(doc)`
+- use User.validatePassord(doc,plainTextPassword) - user.validatePassord(plainTextPassord) no longer supported
+- use User.gererateKey(doc) - user.generateKey() no longer supported
+- use Iota.preload() - Iota.load is not supported
+
 # Getting Started
+
 Follow these instructions to setup the civil-server repo:
 See [Getting Started - Repo-Setup](https://github.com/EnCiv/.github/wiki/Getting-Started-%E2%80%90-Repo-Setup)
 
@@ -39,6 +49,7 @@ npm run dev
 You will now be able to go to http://localhost:3011
 
 # Contributing
+
 When you are ready to contribute please see these notes:
 
 - [React Coding and Style Guidelines](https://github.com/EnCiv/.github/wiki/React-Coding-and-Style-Guidelines)
@@ -47,13 +58,15 @@ When you are ready to contribute please see these notes:
 # How to use it
 
 To create a new project from scratch
+
 ```bash
 mkdir new-project
 cd new-project
 npm init #answer the questions as you want for your project
 npm install github:EnCiv/civil-server
 node_modules/.bin/do-civil
-````
+```
+
 Your project directory is now ready for you.
 
 `npm run storybook` and `npm run dev` will now work.
@@ -61,25 +74,25 @@ Your project directory is now ready for you.
 _app/start.js_
 
 ```js
-"use strict";
+'use strict'
 
-const path=require('path')
-import {civilServer, Iota} from "civil-server"
+const path = require('path')
+import { civilServer, Iota } from 'civil-server'
 import iotas from '../iotas.json'
 import App from './components/app'
 
-Iota.load(iotas)
+Iota.preload(iotas)
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 async function start() {
   try {
     const server = new civilServer()
-    server.App=App
+    server.App = App
     await server.earlyStart()
     server.routesDirPaths.push(path.resolve(__dirname, './routes'))
     server.socketAPIsDirPaths.push(path.resolve(__dirname, './socket-apis'))
     server.serverEventsDirPaths.push(path.resolve(__dirname, './events'))
     await server.start()
-    logger.info("started")
+    logger.info('started')
   } catch (error) {
     logger.error('error on start', error)
   }
@@ -206,7 +219,7 @@ The default function of the file will be called with this of the express object.
 
 # Events Dirctory
 
-__Note:__ Event's aren't used much and there may be better ways now.
+**Note:** Event's aren't used much and there may be better ways now.
 
 Within the server, components can listen for and generate events. Each file in the events directory represents an event listener, and can define the name of an Event.
 
@@ -261,7 +274,6 @@ here is a simple one, ./app/web-components/undebate-iframes.js:
 
 import React from 'react'
 import injectSheet from 'react-jss'
-
 
 const styles = {
   title: {

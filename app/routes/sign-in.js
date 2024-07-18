@@ -24,7 +24,7 @@ async function signIn(req, res, next) {
           res.statusCode = 404
           res.json({ 'user/password error': email })
         }
-        const validated = await user.validatePassword(password)
+        const validated = await User.validatePassword(user, password)
         if (!validated) {
           res.statusCode = 404
           res.json({ 'user/password error': email })

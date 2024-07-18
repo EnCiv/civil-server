@@ -1,4 +1,5 @@
-const MongoModels = require('mongo-models')
+const { Mongo } = require('@enciv/mongo-collections')
+import { MongoMemoryServer } from 'mongodb-memory-server'
 const User = require('../user')
 
 // dummy out logger for tests
@@ -10,26 +11,27 @@ const HASHED_PASSWORD_REGEX = /^[0-9a-zA-Z$/.]{60}$/
 const BASE_64_REGEX = /^[0-9a-zA-Z]{16}$/
 const TOKEN_EXPIRATION_TIME_MINUTES = 10
 
+let MemoryServer
 beforeAll(async () => {
-  await MongoModels.connect({ uri: global.__MONGO_URI__ }, { useUnifiedTopology: true })
-  const { toInit = [] } = MongoModels.toInit
-  MongoModels.toInit = []
-  for await (const init of toInit) await init()
+  MemoryServer = await MongoMemoryServer.create()
+  const uri = MemoryServer.getUri()
+  await Mongo.connect(uri)
 })
 
 afterAll(async () => {
-  MongoModels.disconnect()
+  Mongo.disconnect()
+  MemoryServer.stop()
 })
 
 test('the db is empty', async () => {
-  const count = await User.count({})
+  const count = await User.countDocuments({})
   expect(count).toBe(0)
 })
 
 describe('create method', () => {
   test('happy insert', async () => {
     const dbUser = { email: 'success@email.com', password: 'password', firstName: 'Test', lastName: 'User' }
-    await User.create(dbUser)
+    const createdUser = await User.create(dbUser)
     const user = await User.findOne({ email: 'success@email.com' })
     const expectedDbUser = dbUser
     expectedDbUser.password = expect.stringMatching(HASHED_PASSWORD_REGEX)
@@ -46,8 +48,8 @@ describe('create method', () => {
 
 test('validatePassword method', async () => {
   const user = new User({ password: '$2b$10$PEA9iHuap7j24h.yR2zOjOr5hOhX131zS6.iwXjmxMXCVh9zUsfPq' })
-  expect(await user.validatePassword('nottherightpassword')).toBeFalsy()
-  expect(await user.validatePassword('password')).toBeTruthy()
+  expect(await User.validatePassword(user, 'nottherightpassword')).toBeFalsy()
+  expect(await User.validatePassword(user, 'password')).toBeTruthy()
 })
 
 test('generateTokenAndKey method', async () => {
@@ -59,7 +61,7 @@ test('generateTokenAndKey method', async () => {
     lastName: 'User',
   }
   let user = await User.create(dbUser)
-  user = await user.generateTokenAndKey()
+  user = await User.generateTokenAndKey(user)
 
   const expectedDbUser = dbUser
   expectedDbUser.password = expect.stringMatching(HASHED_PASSWORD_REGEX)
@@ -116,8 +118,7 @@ describe('resetPassword method', () => {
     expectedDbUser.activationToken = ''
     expectedDbUser.tokenExpirationDate = ''
     expectedDbUser.password = expect.stringMatching(HASHED_PASSWORD_REGEX)
-
     expect(updatedUser).toMatchObject(expectedDbUser)
-    expect(await updatedUser.validatePassword(newPassword)).toBeTruthy()
+    expect(await User.validatePassword(updatedUser, newPassword)).toBeTruthy()
   })
 })

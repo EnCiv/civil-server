@@ -85,7 +85,7 @@ class API {
   async validateUserCookie(cookie, ok, ko) {
     if (this.users.some(user => user.id === cookie.id)) return ok()
     else {
-      let usr = await User.findOne({ _id: User.ObjectID(cookie.id) })
+      let usr = await User.findOne({ _id: new User.ObjectId(cookie.id) })
       if (!usr) {
         logger.error(`API:validateUserCookie id ${cookie.id} not found in this server/db`)
         if (ko) return ko()

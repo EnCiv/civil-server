@@ -51,7 +51,7 @@ async function sendPassword(email, returnTo, cb) {
         cb({ error: 'User not found' })
       } else {
         logger.debug('user found. generating token and key')
-        user = await user.generateTokenAndKey()
+        user = await User.generateTokenAndKey(user)
 
         const sendResetSuccess = await sendResetPasswordEmail(
           host,
