@@ -33,6 +33,7 @@ In addition, projects/repos that use the civil-server can be imported in other p
 - the documents returned from methods like .findOne() or .toArray() are plain object, not of the User or Iota class. To make them of the class do `new User(doc)`
 - use User.validatePassord(doc,plainTextPassword) - user.validatePassord(plainTextPassord) no longer supported
 - use User.gererateKey(doc) - user.generateKey() no longer supported
+- use Iota.preload() - Iota.load is not supported
 
 # Getting Started
 
