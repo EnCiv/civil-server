@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "an extensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -108,7 +108,7 @@
   },
   "bin": {
     "do-civil": "./app/tools/do-civil.sh",
-    "logwatch": "./app/tools/logwatch.js",
+    "logwatch": "./dist/tools/logwatch.js",
     "mongo-id": "./dist/tools/mongo-id.js",
     "react-directory-indexer": "./dist/tools/react-directory-indexer.js"
   },
