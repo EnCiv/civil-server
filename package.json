@@ -104,7 +104,8 @@
     "socket.io": "^4.4.0",
     "socket.io-client": "^4.4.0",
     "stream-browserify": "^3.0.0",
-    "superagent": "^5.3.1"
+    "superagent": "^5.3.1",
+    "vanilla-cookieconsent": "^3.0.1"
   },
   "bin": {
     "do-civil": "./app/tools/do-civil.sh",

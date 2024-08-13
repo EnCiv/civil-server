@@ -1,3 +1,5 @@
+// https://github.com/EnCiv/civil-server/issues/45
+
 'use strict'
 
 import React from 'react'
