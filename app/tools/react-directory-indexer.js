@@ -60,7 +60,14 @@ function reactDirectoryIndexer(dstPath, dirPaths) {
     try {
       await asyncMkdir(dstPath) // make sure the destination directory exists
       if (typeof dirPaths === 'string') dirPaths = [dirPaths] // originally it was just a string, but now it should be an array
-      for await (const dirPath of dirPaths) {
+      for await (let dirPath of dirPaths) {
+        // if node_modules/project-name/app/web-components doesn't exist, try ../project-name/app/web-component because maybe this
+        // is being run from withing node_modules of some project and project-name is a commpon package so it will be a peer package rather than below
+        if (!fs.existsSync(dirPath)) {
+          if (dirPath.startsWith('node_modules/')) dirPath = '..' + dirPath.substring('node_modules'.length)
+          else throw new Error(`${dirPath} does not exist`)
+          if (!fs.existsSync(dirPath)) throw new Error(`neither node_modules/${dirPath} nore ${dirPath} exist`)
+        }
         var filenames = await new Promise((ok, ko) => {
           return fs.readdir(dirPath, (err, filenames) => (err ? ko(err) : ok(filenames)))
         })
@@ -77,11 +84,11 @@ function reactDirectoryIndexer(dstPath, dirPaths) {
               const name = file.replace(/(\.js$|\.jsx$)/, '')
               if (name !== name.toLowerCase()) throw new Error('indexHandlers found non lowercase name:', name)
               if (handlers[name])
-                logger.warn('indexHandlers: handler', name, 'is being replaced from directory', dirPath)
+                console.warn('indexHandlers: handler', name, 'is being replaced from directory', dirPath)
               handlers[name] = filePath + name
             }
           } catch (error) {
-            logger.error(`Error requiring api file ${file} on start`, error)
+            console.error(`Error requiring api file ${file} on start`, error)
             return ko(error)
           }
         }
