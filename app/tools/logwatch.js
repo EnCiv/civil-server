@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 'use strict'
 
-var MongoClient = require('mongodb').MongoClient
+import Log from '../models/log'
+import { Mongo } from '@enciv/mongo-collections'
 
 var start = new Date()
 start.setDate(start.getDate() - 1) // start yesterday
@@ -41,50 +42,15 @@ const colorLevel = {
   trace: Reset,
 }
 
-function polldb() {
-  var p1 = new Promise((ok, ko) => {
-    this.db
-      .collection('logs')
-      .find({ startTime: { $gt: this.start } })
-      .sort({ startTime: 1 })
-      .limit(args.limit || 0)
-      .toArray((err, logs) => {
-        if (err) ko(err)
-        else if (!logs.length) {
-          this.pollcount = this.pollcount + 1 || 1 // might not be initialized
-          process.stdout.write('.')
-          ok() // if no date, come back later
-        } else {
-          if (this.pollcount) {
-            this.pollcount = 0
-            process.stdout.write('\n')
-          }
-          logs.forEach(log => {
-            console.log(
-              colorLevel[log.level] + log.startTime.toLocaleTimeString(undefined, { timeStyle: 'short' }),
-              log.source,
-              log.level,
-              Reset,
-              log.data
-            )
-          })
-          this.start = logs[logs.length - 1].startTime
-          ok()
-        }
-      })
-  })
-  p1.then(
-    () => setTimeout(() => polldb.call(this), 5000),
-    err => {
-      console.info('closing', err)
-      this.client.close()
-    }
-  )
-}
-
 // fetch args from command line
 var argv = process.argv
-var args = {}
+var args = { start }
+if (argv.length <= 2) {
+  console.info(
+    'logwatch db (URI) start (backward-in-minutes) source (node|browser) level (info|warn|error) limit (number)'
+  )
+  process.exit(0)
+}
 for (let arg = 2; arg < argv.length; arg++) {
   switch (argv[arg]) {
     case 'db': // the mongo database URI
@@ -94,17 +60,49 @@ for (let arg = 2; arg < argv.length; arg++) {
       args[argv[arg]] = parseInt(argv[++arg])
       break
     case 'start':
-      args[argv[arg]] = new Date(new Date().getTime() + parseInt(argv[++arg]) * 60000)
+      args[argv[arg]] = new Date(new Date().getTime() - parseInt(argv[++arg]) * 60000)
+      break
+    case 'source':
+    case 'level':
+      args[argv[arg]] = argv[++arg]
       break
     default:
       console.error('ignoring unexpected argument:', argv[arg])
   }
 }
-
-MongoClient.connect(args.db).then(client => {
+async function main() {
+  await Mongo.connect(args.db)
   console.log('Connected to server:', args.db)
-  this.client = client
-  this.db = client.db()
-  this.start = args.start || start
-  polldb.call(this)
-})
+  let start = args.start
+  const array = [{ $match: { startTime: { $gt: start } } }, { $sort: { startTime: 1 } }]
+  if (args.source) array[0].$match.source = args.source
+  if (args.level) array[0].$match.level = args.level
+  let pollcount = 0
+  while (1) {
+    const logs = await Log.aggregate(array).toArray()
+    if (logs.length) {
+      if (pollcount) {
+        pollcount = 0
+        console.log('\n')
+      }
+      logs.forEach(log => {
+        console.log(
+          colorLevel[log.level] + log.startTime.toLocaleTimeString(undefined, { timeStyle: 'short' }),
+          log.source,
+          log.level,
+          Reset,
+          JSON.stringify(log.data, null, 2)
+        )
+      })
+      let date = logs[logs.length - 1].startTime
+      const mill = date.getMilliseconds() + 1
+      date.setMilliseconds(mill)
+      array[0].$match.startTime = date
+    } else {
+      process.stdout.write('.')
+      pollcount++
+    }
+    await new Promise((ok, ko) => setTimeout(ok, 10000))
+  }
+}
+main()
