@@ -40,48 +40,58 @@ test('Test consents exist in the DB.', async () => {
 
 test('Test adding consent data.', async () => {
   const aConsent = { who: { userId: USER_ID }, what: {} }
-  const consentObj = await Consent.create(aConsent)
+  await Consent.create(aConsent)
 
-  const updatedDoc = await Consent.updateConsent(
-    consentObj,
-    'ConsentOption1',
-    true,
-    'By consenting, you agree to consent to this agreement.'
-  )
+  const updatedDoc = await Consent.updateConsent('userId', USER_ID, [
+    { category: 'ConsentOption1', isGranted: true, terms: 'By consenting, you agree to consent to this agreement.' },
+  ])
+
+  expect(updatedDoc).toMatchObject({
+    _id: /./,
+    who: { userId: '6667d5a33da5d19ddc304a6b' },
+    what: {
+      ConsentOption1: {
+        isGranted: true,
+        consentDate: expect.any(Date),
+        terms: 'By consenting, you agree to consent to this agreement.',
+        history: [],
+      },
+    },
+  })
 })
 
 test('Test historical consent data is pushed.', async () => {
   const aConsent = { who: { userId: USER_ID }, what: {} }
-  const consentObj = await Consent.create(aConsent)
+  await Consent.create(aConsent)
+
+  const userIdQuery = ['userId', USER_ID]
 
   // Update the same consent option twice
-  await Consent.updateConsent(
-    consentObj,
-    'ConsentOption1',
-    true,
-    'By consenting, you agree to consent to this agreement.'
-  )
+  await Consent.updateConsent(...userIdQuery, [
+    {
+      category: 'ConsentOption1',
+      isGranted: true,
+      terms: 'By consenting a second time, you agree to consent to this agreement being pushed to the history.',
+    },
+  ])
 
-  await Consent.updateConsent(
-    consentObj,
-    'ConsentOption1',
-    true,
-    'By consenting a second time, you agree to consent to this agreement being pushed to the history.'
-  )
+  // Test adding multiple at once
+  await Consent.updateConsent(...userIdQuery, [
+    {
+      category: 'ConsentOption2',
+      isGranted: true,
+      terms: "By consenting to another option, you agree there's two options now.",
+    },
+    {
+      category: 'ConsentOption3',
+      isGranted: false,
+      terms: "By consenting to a third option, you agree there's three options now.",
+    },
+  ])
 
-  await Consent.updateConsent(
-    consentObj,
-    'ConsentOption2',
-    true,
-    "By consenting to another option, you've agreed there's two options now."
-  )
-
-  const updatedDoc = await Consent.updateConsent(
-    consentObj,
-    'ConsentOption1',
-    false,
-    "By revoking your consent, you don't agree to consent."
-  )
+  const updatedDoc = await Consent.updateConsent(...userIdQuery, [
+    { category: 'ConsentOption1', isGranted: false, terms: "By revoking your consent, you don't agree to consent." },
+  ])
 
   expect(updatedDoc).toMatchObject({
     _id: /./,
@@ -89,25 +99,31 @@ test('Test historical consent data is pushed.', async () => {
     what: {
       ConsentOption1: {
         isGranted: false,
-        consentDate: /./,
+        consentDate: expect.any(Date),
         terms: "By revoking your consent, you don't agree to consent.",
         history: [
           {
             isGranted: true,
-            consentDate: /./,
+            consentDate: expect.any(Date),
             terms: 'By consenting, you agree to consent to this agreement.',
           },
           {
             isGranted: true,
-            consentDate: /./,
+            consentDate: expect.any(Date),
             terms: 'By consenting a second time, you agree to consent to this agreement being pushed to the history.',
           },
         ],
       },
       ConsentOption2: {
         isGranted: true,
-        consentDate: /./,
-        terms: "By consenting to another option, you've agreed there's two options now.",
+        consentDate: expect.any(Date),
+        terms: "By consenting to another option, you agree there's two options now.",
+        history: [],
+      },
+      ConsentOption3: {
+        isGranted: false,
+        consentDate: expect.any(Date),
+        terms: "By consenting to a third option, you agree there's three options now.",
         history: [],
       },
     },

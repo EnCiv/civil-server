@@ -87,33 +87,49 @@ class Consent extends Collection {
     }
   }
 
-  static async updateConsent(consentObj, optionName, consentGranted, terms) {
-    // Use the provided consent object to construct the query
-    const query = { _id: consentObj._id } // Assuming the document has an _id field
-    const consentDoc = await this.findOne(query)
+  static async getConsentDoc(key, value) {
+    const query = { [key]: value }
+    return await this.findOne(query)
+  }
 
+  static modifySingleConsent(consentDoc, category, isGranted, terms) {
+    /* Updates a consent obj in memory. */
     if (consentDoc) {
       // If previous consent data exists, push it to the history
       let newHistory
 
-      if (consentDoc.what[optionName]) {
-        newHistory = consentDoc.what[optionName]['history']
-        const { history, ...otherData } = consentDoc.what[optionName]
+      if (consentDoc.what[category]) {
+        newHistory = consentDoc.what[category]['history']
+        const { history, ...otherData } = consentDoc.what[category]
         newHistory.push({ ...otherData })
       }
 
       // Set the new value of consent option
-      const newConsent = {
-        ...consentDoc.what,
-        [optionName]: { isGranted: consentGranted, consentDate: new Date(), terms: terms, history: newHistory ?? [] },
+      return {
+        ...consentDoc,
+        what: {
+          ...consentDoc.what,
+          [category]: { isGranted: isGranted, consentDate: new Date(), terms: terms, history: newHistory ?? [] },
+        },
       }
-
-      await this.updateOne(query, { $set: { what: newConsent } })
-
-      return await this.findOne(query)
     } else {
-      console.log('No matching document found.')
+      console.log('No document to update provided.')
     }
+  }
+
+  static async updateConsent(whoKey, whoVal, newConsent) {
+    let doc = await this.findOne({ [`who.${whoKey}`]: whoVal })
+
+    for (const obj of newConsent) {
+      const { category, isGranted, terms } = obj
+
+      doc = this.modifySingleConsent(doc, category, isGranted, terms)
+    }
+
+    const query = { _id: doc._id }
+    const result = await this.findOneAndUpdate(query, { $set: doc }, { returnDocument: 'after' })
+
+    return result.value
   }
 }
 Consent.setCollectionProps()
