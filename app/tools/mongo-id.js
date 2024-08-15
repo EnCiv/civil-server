@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict'
 
-var ObjectID = require('mongodb').ObjectID
+var ObjectId = require('mongodb').ObjectId
 
-console.log((new ObjectID()).toHexString())
+console.log(new ObjectId().toHexString())
