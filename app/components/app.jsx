@@ -24,12 +24,13 @@ const DynamicFontSizeHelmet =
       )
     : () => null
 
-const serviceRunners = {
-  necessary: {},
-  analytics: {
-    'Google Analytics': accepted => {
-      console.log(accepted)
-      if (accepted) {
+// We can extend this by storing in the database
+const services = {
+  necessary: [],
+  analytics: [
+    {
+      label: 'Google Analytics',
+      onAccept: () => {
         if (process.env.GOOGLE_ANALYTICS) {
           window.dataLayer = window.dataLayer || []
           window.gtag = function () {
@@ -42,21 +43,41 @@ const serviceRunners = {
           script.id = 'googletagmanager' // so we can find it and delete it if needed
           document.head.appendChild(script)
         }
-      } else {
+      },
+      onReject: () => {
         delete window.dataLayer
         delete window.gtag
         const gtmElement = document.getElementById('googletagmanager')
         if (gtmElement) gtmElement.remove()
-      }
+      },
     },
-  },
+  ],
 }
 
+/* 
+Format the services data lists for each category.
+
+Was a bit hard to find documentation, 
+but this is the object structure for displaying individual services.
+{
+    service1: {
+      label: 'service1',
+      onAccept: Func(),
+      onReject: Func(),  
+    },
+    service2: {...}
+    ...
+}
+*/
+
 const consentCategories = {}
-const populate = () => {
-  for (const key of Object.keys(serviceRunners)) {
+function initServices() {
+  for (const key of Object.keys(services)) {
     consentCategories[key] = {
-      services: Object.keys(serviceRunners[key]),
+      services: services[key].reduce((result, service) => {
+        result[service.label] = { ...service }
+        return result
+      }, {}),
     }
 
     if (key === 'necessary') {
@@ -65,7 +86,7 @@ const populate = () => {
     }
   }
 }
-populate()
+initServices()
 
 function App(props) {
   var { iota, ...newProps } = props
@@ -73,21 +94,6 @@ function App(props) {
   useEffect(() => {
     CookieConsent.run({
       categories: consentCategories,
-      onConsent: ({ cookie }) => {
-        console.log('NEW CONSENT', cookie)
-        const { categories, services, ...props } = cookie
-        console.log(categories)
-        if (categories)
-          for (const category of categories) {
-            switch (category) {
-              case 'analytics':
-                const accepted = CookieConsent.acceptedService('Google Analytics', 'analytics')
-                console.log('AHHHHHHHHHHH', accepted)
-                serviceRunners.analytics['Google Analytics'](accepted)
-                break
-            }
-          }
-      },
       language: {
         default: 'en',
         translations: {
