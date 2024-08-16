@@ -8,6 +8,7 @@ import WebComponents from '../web-components'
 import Footer from './footer'
 import { ErrorBoundary } from 'civil-client'
 import { Helmet } from 'react-helmet'
+import * as CookieConsent from 'vanilla-cookieconsent'
 
 const DynamicFontSizeHelmet =
   typeof window === 'undefined'
@@ -23,44 +24,66 @@ const DynamicFontSizeHelmet =
       )
     : () => null
 
-import * as CookieConsent from 'vanilla-cookieconsent'
+const serviceRunners = {
+  necessary: {},
+  analytics: {
+    'Google Analytics': accepted => {
+      console.log(accepted)
+      if (accepted) {
+        if (process.env.GOOGLE_ANALYTICS) {
+          window.dataLayer = window.dataLayer || []
+          window.gtag = function () {
+            dataLayer.push(arguments)
+          }
+          gtag('js', new Date())
+          gtag('config', `${process.env.GOOGLE_ANALYTICS}`)
+          const script = document.createElement('script') // create a script DOM node
+          script.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS}`
+          script.id = 'googletagmanager' // so we can find it and delete it if needed
+          document.head.appendChild(script)
+        }
+      } else {
+        delete window.dataLayer
+        delete window.gtag
+        const gtmElement = document.getElementById('googletagmanager')
+        if (gtmElement) gtmElement.remove()
+      }
+    },
+  },
+}
+
+const consentCategories = {}
+const populate = () => {
+  for (const key of Object.keys(serviceRunners)) {
+    consentCategories[key] = {
+      services: Object.keys(serviceRunners[key]),
+    }
+
+    if (key === 'necessary') {
+      consentCategories[key].readOnly = true
+      consentCategories[key].enabled = true
+    }
+  }
+}
+populate()
 
 function App(props) {
   var { iota, ...newProps } = props
 
   useEffect(() => {
     CookieConsent.run({
-      categories: {
-        necessary: {
-          enabled: true, // this category is enabled by default
-          readOnly: true, // this category cannot be disabled
-        },
-        analytics: {},
-      },
-      onConsent: ({ changedCategories, changedServices }) => {
-        if (changedCategories)
-          for (const category of changedCategories) {
+      categories: consentCategories,
+      onConsent: ({ cookie }) => {
+        console.log('NEW CONSENT', cookie)
+        const { categories, services, ...props } = cookie
+        console.log(categories)
+        if (categories)
+          for (const category of categories) {
             switch (category) {
               case 'analytics':
-                if (CookieConsent.acceptCategory(category)) {
-                  if (process.env.GOOGLE_ANALYTICS) {
-                    window.dataLayer = window.dataLayer || []
-                    window.gtag = function () {
-                      dataLayer.push(arguments)
-                    }
-                    gtag('js', new Date())
-                    gtag('config', `${process.env.GOOGLE_ANALYTICS}`)
-                    const script = document.createElement('script') // create a script DOM node
-                    script.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS}`
-                    script.id = 'googletagmanager' // so we can find it and delete it if needed
-                    document.head.appendChild(script)
-                  }
-                } else {
-                  delete window.dataLayer
-                  delete window.gtag
-                  const gtmElement = document.getElementById('googletagmanager')
-                  if (gtmElement) gtmElement.remove()
-                }
+                const accepted = CookieConsent.acceptedService('Google Analytics', 'analytics')
+                console.log('AHHHHHHHHHHH', accepted)
+                serviceRunners.analytics['Google Analytics'](accepted)
                 break
             }
           }
@@ -83,10 +106,6 @@ function App(props) {
               savePreferencesBtn: 'Accept current selection',
               closeIconLabel: 'Close modal',
               sections: [
-                {
-                  title: 'Somebody said ... cookies?',
-                  description: 'I want one!',
-                },
                 {
                   title: 'Strictly Necessary cookies',
                   description:

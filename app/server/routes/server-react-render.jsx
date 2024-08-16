@@ -6,18 +6,6 @@ import { JssProvider, SheetsRegistry, createGenerateId } from 'react-jss'
 import cloneDeep from 'lodash/cloneDeep'
 import { Helmet } from 'react-helmet'
 
-const googleAnalytics = (props, req, res) =>
-  process.env.GOOGLE_ANALYTICS
-    ? `<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', '${process.env.GOOGLE_ANALYTICS}');
-</script>`
-    : ''
-
 // extract meta tags from the web component
 const metaTags = (props, req, res) =>
   (props.iota &&
@@ -35,7 +23,7 @@ function serverReactRender(App, req, res, next) {
         ? JSON.parse(req.cookies.synuser)
         : req.cookies.synuser
       : undefined
-
+    console.log(serverReactRender)
     const props = Object.assign(
       {
         env: dev, // depricated should go away one day
@@ -129,6 +117,7 @@ function serverReactRender(App, req, res, next) {
                       })()
                     )})</script>
                     ${helmet.script.toString()}
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
                 </head>
                 <body style="margin: 0; padding: 0" ${helmet.bodyAttributes.toString()}>
                     <div id="synapp">${body}</div>
@@ -146,7 +135,6 @@ function serverReactRender(App, req, res, next) {
 }
 
 serverReactRender.head = []
-serverReactRender.head.push(googleAnalytics)
 serverReactRender.head.push(metaTags)
 
 export default serverReactRender

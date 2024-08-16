@@ -59,7 +59,12 @@ class HttpServer {
         '*.google-analytics.com',
       ],
       fontSrc: ["'self'", '*.gstatic.com', 'ka-f.fontawesome.com'],
-      styleSrc: ["'self'", "'unsafe-inline'", '*.googleapis.com'],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        '*.googleapis.com',
+        'https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css',
+      ],
       imgSrc: ["'self'", '*.cloudinary.com', 'enciv.org', '*.google-analytics.com'],
       mediaSrc: ["'self'", '*.cloudinary.com', 'blob:', 'mediastream:'],
       connectSrc: ["'self'", 'ka-f.fontawesome.com', '*.google-analytics.com'],
