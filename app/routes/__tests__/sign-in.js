@@ -22,18 +22,19 @@ afterAll(async () => {
   MemoryServer.stop()
 })
 
-
-
 describe('setup test db', ()=>{
+  
   beforeAll(async () => {
     const dbUser = { email: 'success@email.com', password: 'password', firstName: 'Test', lastName: 'User' }
     const createdUser = await User.create(dbUser)
   })
+
   test('the db should contain 1 document', async () => {
     
     const count = await User.countDocuments({})
     expect(count).toBe(1)
   })
+
   test('Test user should exist', async () => {
     const user = await User.findOne({ email: 'success@email.com'})
     expect(user.email).toBe('success@email.com')
@@ -85,5 +86,12 @@ describe('signIn Function', ()=> {
     await signIn(mockRequest, mockResponse, next)
     expect(mockResponse.statusCode).toBe(404)
     expect(mockResponse.json).toHaveBeenCalledWith({ 'user/password error': mockRequest.body.email})
+  })
+
+  it('should call next() function if valid email and password are provided', async()=> {
+    mockRequest.body.email = 'success@email.com'
+    mockRequest.body.password = 'password'
+    await signIn(mockRequest, mockResponse, next)
+    expect(next).toHaveBeenCalledWith()
   })
 })
