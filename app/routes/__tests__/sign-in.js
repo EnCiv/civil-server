@@ -70,4 +70,20 @@ describe('signIn Function', ()=> {
     expect(mockResponse.statusCode).toBe(400)
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Missing password'})
   })
+
+  it('should return 404 if invalid email provided', async() => {
+    mockRequest.body.email = 'missing@email.com'
+    mockRequest.body.password = 'password'
+    await signIn(mockRequest, mockResponse, next)
+    expect(mockResponse.statusCode).toBe(404)
+    expect(mockResponse.json).toHaveBeenCalledWith({ 'user/password error': mockRequest.body.email})
+  })
+
+  it('should return 404 statusCode if invalid password provided', async()=> {
+    mockRequest.body.email = 'success@email.com'
+    mockRequest.body.password = 'invalidpassword'
+    await signIn(mockRequest, mockResponse, next)
+    expect(mockResponse.statusCode).toBe(404)
+    expect(mockResponse.json).toHaveBeenCalledWith({ 'user/password error': mockRequest.body.email})
+  })
 })
