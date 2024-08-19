@@ -47,7 +47,7 @@ describe('signIn Function', ()=> {
   let mockRequest = {
     body: {
       email: '',
-      password: 'testtest'
+      password: ''
     } 
   }
   mockResponse = {
@@ -56,10 +56,18 @@ describe('signIn Function', ()=> {
   }
   const next = jest.fn();
 
-  it('should return 400 status code if email is missing', async()=>{
-    mockRequest.email = null
-    await signIn(mockRequest, mockResponse, next)
+  it('should return 400 status code if email is missing', async()=>{ 
+    mockRequest.body.password = 'password'
+    await signIn(mockRequest, mockResponse, next)   
     expect(mockResponse.statusCode).toBe(400)
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Missing email'})
+  })
+
+  it('should return 400 statusCode if password is missing', async()=>{
+    mockRequest.body.email = 'success@gmail.com'
+    mockRequest.body.password = ''
+    await signIn(mockRequest, mockResponse, next)
+    expect(mockResponse.statusCode).toBe(400)
+    expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Missing password'})
   })
 })
