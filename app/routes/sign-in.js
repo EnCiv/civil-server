@@ -6,7 +6,8 @@ import sendUserId from '../server/util/send-user-id'
 
 const env = process.env.NODE_ENV || 'development'
 
-async function signIn(req, res, next) {
+// made signIn function exportable so it can be imported into jest test files
+export const signIn = async function signIn(req, res, next) {
   try {
     const { password, ..._body } = req.body // don't let the password appear in the logs
     logger.info({ signIn: _body })
