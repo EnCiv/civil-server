@@ -10,9 +10,10 @@ if (!global.logger) {
   global.logger = console
 }
 
+// mocked send-in-blue-transactional functions 
 jest.mock('../../lib/send-in-blue-transactional', ()=>({
-  SibGetTemplateId: jest.fn(()=> 'test'),
-  SibSendTransacEmail: jest.fn(()=> 'test2'),
+  SibGetTemplateId: jest.fn(()=> true),
+  SibSendTransacEmail: jest.fn()
 }))
 
 test('correct creation of mock functions', ()=>{
@@ -20,6 +21,7 @@ test('correct creation of mock functions', ()=>{
   expect(jest.isMockFunction(SibSendTransacEmail)).toBeTruthy()
 })
 
+// configure temporary db
 let MemoryServer
 beforeAll(async () => {
   MemoryServer = await MongoMemoryServer.create()
@@ -56,11 +58,28 @@ describe('setup test db', ()=>{
 describe('sendPassword function', ()=> {
     let mockEmail = 'success@email.com'
     let mockReturnTo = '/join'
-    let mockCb = jest.fn()
-    
+
     it('should execute callback function with "User not found" argument if email not in db', async ()=>{
+      let mockCb = jest.fn()
       mockEmail = 'missing@email.com'
       await sendPassword(mockEmail, mockReturnTo, mockCb)
       expect(mockCb).toHaveBeenCalledWith({ error: 'User not found'})
+    })
+
+    it('should execute callback with error if reset password email fails to send', async ()=> {
+      let mockCb = jest.fn()
+      mockEmail = 'success@email.com'
+      SibSendTransacEmail.mockImplementation(() => false)
+      await sendPassword(mockEmail, mockReturnTo, mockCb)
+      expect(mockCb).toHaveBeenCalledWith('error sending reset password email')
+    })
+
+    it('should execute callback function once without any arguments if reset email was sent successfully', async ()=>{
+      let mockCb = jest.fn()
+      mockEmail = 'success@email.com'
+      SibSendTransacEmail.mockImplementation(() => true)
+      await sendPassword(mockEmail, mockReturnTo, mockCb)
+      expect(mockCb).toHaveBeenCalledWith()
+      expect(mockCb).toHaveBeenCalledTimes(1)
     })
 })
