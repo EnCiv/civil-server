@@ -5,6 +5,8 @@ import { SibGetTemplateId, SibSendTransacEmail } from '../lib/send-in-blue-trans
 
 let templateId
 
+const env = process.env.NODE_ENV || 'development'
+
 async function sendResetPasswordEmail(host, toAddress, activationKey, activationToken, returnToPath) {
   logger.debug('sending password reset email to ', toAddress)
   if (!templateId) {
@@ -42,8 +44,9 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
 }
 
 async function sendPassword(email, returnTo, cb) {
-  const { host } = this.handshake.headers
-
+  // prevents host from being undefined when running jest tests
+  const { host }  = env == 'development'? { host: 'localhost:3011' } : this.handshake.headers
+  
   await User.findOne({ email })
     .then(async user => {
       if (!user) {
