@@ -58,11 +58,13 @@ describe('setup test db', ()=>{
 describe('sendPassword function', ()=> {
     let mockEmail = 'success@email.com'
     let mockReturnTo = '/join'
+    // prevents host from being undefined when running jest tests
+    const mockThisObj = { handshake : { headers : { host : 'localhost:3011'}}}
 
     it('should execute callback function with "User not found" argument if email not in db', async ()=>{
       let mockCb = jest.fn()
       mockEmail = 'missing@email.com'
-      await sendPassword(mockEmail, mockReturnTo, mockCb)
+      await sendPassword.call( mockThisObj, mockEmail, mockReturnTo, mockCb)
       expect(mockCb).toHaveBeenCalledWith({ error: 'User not found'})
     })
 
@@ -70,7 +72,7 @@ describe('sendPassword function', ()=> {
       let mockCb = jest.fn()
       mockEmail = 'success@email.com'
       SibSendTransacEmail.mockImplementation(() => false)
-      await sendPassword(mockEmail, mockReturnTo, mockCb)
+      await sendPassword.call( mockThisObj, mockEmail, mockReturnTo, mockCb)
       expect(mockCb).toHaveBeenCalledWith('error sending reset password email')
     })
 
@@ -78,7 +80,7 @@ describe('sendPassword function', ()=> {
       let mockCb = jest.fn()
       mockEmail = 'success@email.com'
       SibSendTransacEmail.mockImplementation(() => true)
-      await sendPassword(mockEmail, mockReturnTo, mockCb)
+      await sendPassword.call( mockThisObj, mockEmail, mockReturnTo, mockCb)
       expect(mockCb).toHaveBeenCalledWith()
       expect(mockCb).toHaveBeenCalledTimes(1)
     })
