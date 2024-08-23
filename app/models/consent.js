@@ -33,7 +33,7 @@ Consent = {
 */
 
 const schema = Joi.object({
-  // Holds at least 1 identifier as to who the consenting user is
+  // Holds at least 1 identifier as to who the consenting user is (userId or ipAddress)
   who: Joi.object({
     userId: Joi.string().alphanum().max(99).optional(),
     ipAddress: Joi.string()
@@ -44,6 +44,7 @@ const schema = Joi.object({
       .optional()
       .allow(''),
   })
+    .or('userId', 'ipAddress')
     .min(1)
     .max(99)
     .required()
@@ -79,17 +80,10 @@ class Consent extends Collection {
       else {
         const msg = `unexpected result ${JSON.stringify(result, null, 2)}`
         logger.error(msg)
-        throw new Error(msg)
       }
     } catch (err) {
       logger.error(`Consent.create caught error:`, err)
-      throw err
     }
-  }
-
-  static async getConsentDoc(key, value) {
-    const query = { [key]: value }
-    return await this.findOne(query)
   }
 
   static modifySingleConsent(consentDoc, category, isGranted, terms) {
@@ -117,8 +111,8 @@ class Consent extends Collection {
     }
   }
 
-  static async updateConsent(whoKey, whoVal, newConsent) {
-    let doc = await this.findOne({ [`who.${whoKey}`]: whoVal })
+  static async updateConsent(whoData, newConsent) {
+    let doc = await this.findOne({ who: whoData })
 
     for (const obj of newConsent) {
       const { category, isGranted, terms } = obj

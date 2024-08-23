@@ -71,28 +71,36 @@ but this is the object structure for displaying individual services.
 */
 
 const consentCategories = {}
-function initServices() {
-  for (const key of Object.keys(services)) {
-    consentCategories[key] = {
-      services: services[key].reduce((result, service) => {
-        result[service.label] = { ...service }
-        return result
-      }, {}),
-    }
+// Init the services lists
+for (const key of Object.keys(services)) {
+  consentCategories[key] = {
+    services: services[key].reduce((result, service) => {
+      result[service.label] = { ...service }
+      return result
+    }, {}),
+  }
 
-    if (key === 'necessary') {
-      consentCategories[key].readOnly = true
-      consentCategories[key].enabled = true
-    }
+  if (key === 'necessary') {
+    consentCategories[key].readOnly = true
+    consentCategories[key].enabled = true
   }
 }
-initServices()
+
+async function logConsent() {
+  console.log(CookieConsent.getUserPreferences())
+}
 
 function App(props) {
   var { iota, ...newProps } = props
 
   useEffect(() => {
     CookieConsent.run({
+      onFirstConsent: cookie => {
+        logConsent()
+      },
+      onChange: cookie => {
+        logConsent()
+      },
       categories: consentCategories,
       language: {
         default: 'en',

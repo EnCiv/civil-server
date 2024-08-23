@@ -42,7 +42,7 @@ test('Test adding consent data.', async () => {
   const aConsent = { who: { userId: USER_ID }, what: {} }
   await Consent.create(aConsent)
 
-  const updatedDoc = await Consent.updateConsent('userId', USER_ID, [
+  const updatedDoc = await Consent.updateConsent({ userId: USER_ID }, [
     { category: 'ConsentOption1', isGranted: true, terms: 'By consenting, you agree to consent to this agreement.' },
   ])
 
@@ -64,10 +64,10 @@ test('Test historical consent data is pushed.', async () => {
   const aConsent = { who: { userId: USER_ID }, what: {} }
   await Consent.create(aConsent)
 
-  const userIdQuery = ['userId', USER_ID]
+  const userIdQuery = { userId: USER_ID }
 
   // Update the same consent option twice
-  await Consent.updateConsent(...userIdQuery, [
+  await Consent.updateConsent(userIdQuery, [
     {
       category: 'ConsentOption1',
       isGranted: true,
@@ -76,7 +76,7 @@ test('Test historical consent data is pushed.', async () => {
   ])
 
   // Test adding multiple at once
-  await Consent.updateConsent(...userIdQuery, [
+  await Consent.updateConsent(userIdQuery, [
     {
       category: 'ConsentOption2',
       isGranted: true,
@@ -89,7 +89,7 @@ test('Test historical consent data is pushed.', async () => {
     },
   ])
 
-  const updatedDoc = await Consent.updateConsent(...userIdQuery, [
+  const updatedDoc = await Consent.updateConsent(userIdQuery, [
     { category: 'ConsentOption1', isGranted: false, terms: "By revoking your consent, you don't agree to consent." },
   ])
 

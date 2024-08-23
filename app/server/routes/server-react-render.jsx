@@ -23,7 +23,7 @@ function serverReactRender(App, req, res, next) {
         ? JSON.parse(req.cookies.synuser)
         : req.cookies.synuser
       : undefined
-    console.log(serverReactRender)
+
     const props = Object.assign(
       {
         env: dev, // depricated should go away one day
