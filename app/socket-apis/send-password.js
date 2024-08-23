@@ -42,7 +42,7 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
 }
 
 async function sendPassword(email, returnTo, cb) {
-  const { host }  = this.handshake.headers
+  const { host } = this.handshake.headers
 
   await User.findOne({ email })
     .then(async user => {
