@@ -3,16 +3,27 @@
 import Consent from '../models/consent'
 
 async function saveConsent(formattedConsentData, cb = () => {}) {
+  /* 
+  Formatted consent data is a list of objects with these fields:
+    [
+      {
+        category: 'OptionName',
+        isGranted: /false,
+        terms: 'Some text..',
+      },
+    ],
+  */
+
   // Check if the consent already exists
   let whoData = {}
   let created = false
 
-  if (this.synuser && this.synuser.id) {
+  if (this?.synuser && this.synuser.id) {
     whoData[`userId`] = this.synuser.id
   }
 
-  if (this.req) {
-    whoData['ipAddress'] = req.headers['x-forwarded-for'] || req.connection.remoteAddress
+  if (this?.client?.conn?.remoteAddress) {
+    whoData['ipAddress'] = this?.client?.conn?.remoteAddress
   }
 
   // Must have either a user ID or IP address
