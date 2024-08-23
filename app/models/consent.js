@@ -59,6 +59,7 @@ const schema = Joi.object({
       Joi.object({
         isGranted: Joi.boolean().required(),
         terms: Joi.string().max(999).required(),
+        services: Joi.array().max(99).default([]),
         consentDate: Joi.date().required(),
         history: Joi.array().default([]),
       }).max(99)

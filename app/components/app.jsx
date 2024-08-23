@@ -9,6 +9,7 @@ import Footer from './footer'
 import { ErrorBoundary } from 'civil-client'
 import { Helmet } from 'react-helmet'
 import * as CookieConsent from 'vanilla-cookieconsent'
+import saveConsent from '../socket-apis/save-consent'
 
 const DynamicFontSizeHelmet =
   typeof window === 'undefined'
@@ -23,6 +24,23 @@ const DynamicFontSizeHelmet =
         />
       )
     : () => null
+
+// The sections that show in the consent modal
+const modalSections = {
+  necessary: {
+    title: 'Strictly Necessary cookies',
+    description: 'These cookies are essential for the proper functioning of the website and cannot be disabled.',
+
+    //this field will generate a toggle linked to the 'necessary' category
+    linkedCategory: 'necessary',
+  },
+  analytics: {
+    title: 'Performance and Analytics',
+    description:
+      'These cookies collect information about how you use our website. All of the data is anonymized and cannot be used to identify you.',
+    linkedCategory: 'analytics',
+  },
+}
 
 // We can extend this by storing in the database
 const services = {
@@ -86,8 +104,31 @@ for (const key of Object.keys(services)) {
   }
 }
 
-async function logConsent() {
-  console.log(CookieConsent.getUserPreferences())
+async function logConsent(user) {
+  const userId = user?.id || user?.tempId || 'anonymous'
+  const synuser = { synuser: { id: userId } }
+
+  const consent = CookieConsent.getCookie()
+
+  let formattedConsentData = []
+  for (const category of Object.keys(modalSections)) {
+    formattedConsentData.push({
+      category: category,
+      isGranted: consent.categories.includes(category),
+      terms: modalSections[category].description,
+      services: consent.services[category],
+    })
+  }
+
+  await saveConsent.call(synuser, formattedConsentData, valid => {
+    if (valid && valid.created) {
+      console.log('New consent created.')
+    } else if (valid?.created === false) {
+      console.log('Consent updated.')
+    } else {
+      console.log('Cannot identify user.')
+    }
+  })
 }
 
 function App(props) {
@@ -96,10 +137,10 @@ function App(props) {
   useEffect(() => {
     CookieConsent.run({
       onFirstConsent: cookie => {
-        logConsent()
+        logConsent(newProps.user)
       },
       onChange: cookie => {
-        logConsent()
+        logConsent(newProps.user)
       },
       categories: consentCategories,
       language: {
@@ -120,20 +161,7 @@ function App(props) {
               savePreferencesBtn: 'Accept current selection',
               closeIconLabel: 'Close modal',
               sections: [
-                {
-                  title: 'Strictly Necessary cookies',
-                  description:
-                    'These cookies are essential for the proper functioning of the website and cannot be disabled.',
-
-                  //this field will generate a toggle linked to the 'necessary' category
-                  linkedCategory: 'necessary',
-                },
-                {
-                  title: 'Performance and Analytics',
-                  description:
-                    'These cookies collect information about how you use our website. All of the data is anonymized and cannot be used to identify you.',
-                  linkedCategory: 'analytics',
-                },
+                ...Object.values(modalSections),
                 {
                   title: 'More information',
                   description:
