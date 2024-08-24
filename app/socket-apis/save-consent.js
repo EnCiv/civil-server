@@ -13,7 +13,6 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
       },
     ],
   */
-
   // Check if the consent already exists
   let whoData = {}
   let created = false
@@ -40,6 +39,7 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
   }
 
   await Consent.updateConsent(whoData, formattedConsentData)
+
   return cb({ created: created })
 }
 

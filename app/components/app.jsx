@@ -2,7 +2,7 @@
 
 'use strict'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { hot } from 'react-hot-loader'
 import WebComponents from '../web-components'
 import Footer from './footer'
@@ -104,43 +104,46 @@ for (const key of Object.keys(services)) {
   }
 }
 
-async function logConsent(user) {
-  const userId = user?.id || user?.tempId || 'anonymous'
-  const synuser = { synuser: { id: userId } }
-
-  const consent = CookieConsent.getCookie()
-
-  let formattedConsentData = []
-  for (const category of Object.keys(modalSections)) {
-    formattedConsentData.push({
-      category: category,
-      isGranted: consent.categories.includes(category),
-      terms: modalSections[category].description,
-      services: consent.services[category],
-    })
-  }
-
-  await saveConsent.call(synuser, formattedConsentData, valid => {
-    if (valid && valid.created) {
-      console.log('New consent created.')
-    } else if (valid?.created === false) {
-      console.log('Consent updated.')
-    } else {
-      console.log('Cannot identify user.')
-    }
-  })
-}
-
 function App(props) {
   var { iota, ...newProps } = props
+
+  const [cookie, setCookie] = useState()
+  const hasMounted = useRef(false)
+
+  useEffect(() => {
+    // Prevent this running on the initial render
+    if (!hasMounted.current) {
+      hasMounted.current = true
+      return
+    }
+
+    const user = newProps.user
+    const userId = user?.id || user?.tempId
+    const synuser = { synuser: { id: userId } }
+
+    const consent = CookieConsent.getCookie()
+
+    let formattedConsentData = []
+    for (const category of Object.keys(modalSections)) {
+      formattedConsentData.push({
+        category: category,
+        isGranted: consent.categories.includes(category),
+        terms: modalSections[category].description,
+        services: consent.services[category],
+      })
+    }
+    window.socket.emit('save-consent', formattedConsentData, () => {
+      console.log('DONE')
+    })
+  }, [cookie])
 
   useEffect(() => {
     CookieConsent.run({
       onFirstConsent: cookie => {
-        logConsent(newProps.user)
+        setCookie(cookie)
       },
       onChange: cookie => {
-        logConsent(newProps.user)
+        setCookie(cookie)
       },
       categories: consentCategories,
       language: {

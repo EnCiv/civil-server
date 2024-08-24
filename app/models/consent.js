@@ -87,7 +87,7 @@ class Consent extends Collection {
     }
   }
 
-  static modifySingleConsent(consentDoc, category, isGranted, terms) {
+  static modifySingleConsent(consentDoc, category, isGranted, terms, services) {
     /* Updates a consent obj in memory. */
     if (consentDoc) {
       // If previous consent data exists, push it to the history
@@ -104,7 +104,13 @@ class Consent extends Collection {
         ...consentDoc,
         what: {
           ...consentDoc.what,
-          [category]: { isGranted: isGranted, consentDate: new Date(), terms: terms, history: newHistory ?? [] },
+          [category]: {
+            isGranted: isGranted,
+            consentDate: new Date(),
+            terms: terms,
+            services: services,
+            history: newHistory ?? [],
+          },
         },
       }
     } else {
@@ -116,9 +122,9 @@ class Consent extends Collection {
     let doc = await this.findOne({ who: whoData })
 
     for (const obj of newConsent) {
-      const { category, isGranted, terms } = obj
+      const { category, isGranted, terms, services } = obj
 
-      doc = this.modifySingleConsent(doc, category, isGranted, terms)
+      doc = this.modifySingleConsent(doc, category, isGranted, terms, services)
     }
 
     const query = { _id: doc._id }
