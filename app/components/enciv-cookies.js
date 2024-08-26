@@ -2,6 +2,12 @@ import React, { useEffect, useState, useRef } from 'react'
 import Helmet from 'helmet'
 import * as CookieConsent from 'vanilla-cookieconsent'
 
+const CConsentStyleHelmet = () => (
+  <Helmet>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css" />
+  </Helmet>
+)
+
 function EncivCookies(props) {
   const { user } = props
   const [cookie, setCookie] = useState()
@@ -19,6 +25,7 @@ function EncivCookies(props) {
 
     const consent = CookieConsent.getCookie()
 
+    // Retrieve information from lookups and format
     let formattedConsentData = []
     for (const category of Object.keys(modalSections)) {
       formattedConsentData.push({
@@ -28,7 +35,11 @@ function EncivCookies(props) {
         services: consent.services[category],
       })
     }
-    window.socket.emit('save-consent', formattedConsentData, () => {})
+
+    // Call the server to save consent to database
+    window.socket.emit('save-consent', synuser, formattedConsentData, () => {
+      console.log('Consent data successfully saved.')
+    })
   }, [cookie])
 
   useEffect(() => {
@@ -152,14 +163,9 @@ but this is the object structure for displaying individual services.
   }
 
   return (
-    <>
-      <Helmet>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css"
-        />
-      </Helmet>
-    </>
+    <div>
+      <CConsentStyleHelmet />
+    </div>
   )
 }
 
