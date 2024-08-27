@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import Helmet from 'helmet'
+import Helmet from 'react-helmet'
 import * as CookieConsent from 'vanilla-cookieconsent'
 
 const CConsentStyleHelmet = () => (
