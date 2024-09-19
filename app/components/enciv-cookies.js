@@ -107,15 +107,16 @@ function EncivCookies(props) {
       {
         label: 'Google Analytics',
         onAccept: () => {
-          if (process.env.GOOGLE_ANALYTICS) {
+          if (window.process.env.GOOGLE_ANALYTICS) {
+            // using window.process becase there's a process.env that's different
             window.dataLayer = window.dataLayer || []
             window.gtag = function () {
               dataLayer.push(arguments)
             }
             gtag('js', new Date())
-            gtag('config', `${process.env.GOOGLE_ANALYTICS}`)
+            gtag('config', `${window.process.env.GOOGLE_ANALYTICS}`)
             const script = document.createElement('script') // create a script DOM node
-            script.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS}`
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${window.process.env.GOOGLE_ANALYTICS}`
             script.id = 'googletagmanager' // so we can find it and delete it if needed
             document.head.appendChild(script)
           }
