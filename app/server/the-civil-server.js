@@ -16,6 +16,7 @@ import { Mongo } from '@enciv/mongo-collections'
 import mongologger from './util/mongo-logger'
 import path from 'path'
 import App from '../components/app'
+import { mergeWith } from 'lodash'
 
 if (!global.logger) {
   log4js.configure({
@@ -39,33 +40,49 @@ if (!global.logger) {
 class HttpServer {
   constructor() {
     // these are the directive requited for helment conntent security below
-    this.directives = {
-      defaultSrc: ["'self'"],
-      childSrc: ["'self'"],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'",
-        '*.fontawesome.com',
-        '*.googletagmanager.com',
-        'webrtc.github.io',
-        '*.google-analytics.com',
-      ],
-      scriptSrcElem: [
-        "'self'",
-        "'unsafe-inline'",
-        '*.fontawesome.com',
-        '*.googletagmanager.com',
-        'webrtc.github.io',
-        '*.google-analytics.com',
-      ],
-      fontSrc: ["'self'", '*.gstatic.com', 'ka-f.fontawesome.com'],
-      styleSrc: ["'self'", "'unsafe-inline'", '*.googleapis.com'],
-      imgSrc: ["'self'", '*.cloudinary.com', 'enciv.org', '*.google-analytics.com'],
-      mediaSrc: ["'self'", '*.cloudinary.com', 'blob:', 'mediastream:'],
-      connectSrc: ["'self'", 'ka-f.fontawesome.com', '*.google-analytics.com'],
-      frameSrc: ["'self'", 'docs.google.com'],
+    this.contentSecurityPolicy = {
+      reportOnly: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        childSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          '*.fontawesome.com',
+          '*.googletagmanager.com',
+          'webrtc.github.io',
+          '*.google-analytics.com',
+        ],
+        scriptSrcElem: [
+          "'self'",
+          "'unsafe-inline'",
+          '*.fontawesome.com',
+          '*.googletagmanager.com',
+          'webrtc.github.io',
+          '*.google-analytics.com',
+        ],
+        fontSrc: ["'self'", '*.gstatic.com', 'ka-f.fontawesome.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", '*.googleapis.com'],
+        imgSrc: ["'self'", '*.cloudinary.com', 'enciv.org', '*.google-analytics.com'],
+        mediaSrc: ["'self'", '*.cloudinary.com', 'blob:', 'mediastream:'],
+        connectSrc: ["'self'", 'ka-f.fontawesome.com', '*.google-analytics.com'],
+        frameSrc: ["'self'", 'docs.google.com'],
+      },
     }
-    if (process.env.NODE_ENV === 'development') this.directives.scriptSrc.push("'unsafe-eval'") // used in development on webpack
+    this.directives = {
+      // in the future this should go away in favor of this.contentSecuirtyPolicy.directives
+      defaultSrc: [],
+      childSrc: [],
+      scriptSrc: [],
+      scriptSrcElem: [],
+      fontSrc: [],
+      styleSrc: [],
+      imgSrc: [],
+      mediaSrc: [],
+      connectSrc: [],
+      frameSrc: [],
+    }
+    if (process.env.NODE_ENV === 'development') this.contentSecurityPolicy.directives.scriptSrc.push("'unsafe-eval'") // used in development on webpack
     this.routeHandlers = {}
     this.routesDirPaths = [path.resolve(__dirname, '../routes')]
     this.serverEventsDirPaths = [path.resolve(__dirname, '../events')]
@@ -154,7 +171,13 @@ class HttpServer {
         this.app.use(compression())
         this.app.use(helmet({ frameguard: false }))
         this.app.use(helmet.hidePoweredBy({ setTo: 'Powered by Ruby on Rails.' }))
-        this.app.use(helmet.contentSecurityPolicy({ directives: this.directives }))
+        this.app.use(
+          helmet.contentSecurityPolicy(
+            mergeWith(this.contentSecurityPolicy, { directives: this.directives }, (o, s) =>
+              Array.isArray(o) ? o.concat(s) : undefined
+            )
+          )
+        )
         this.app.use(bodyParser.urlencoded({ extended: true }), bodyParser.json(), bodyParser.text())
         this.app.use(cookieParser())
         this.app.use(
