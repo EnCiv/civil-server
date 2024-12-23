@@ -41,7 +41,7 @@ class HttpServer {
   constructor() {
     // these are the directive requited for helment conntent security below
     this.contentSecurityPolicy = {
-      reportOnly: true,
+      reportOnly: false,
       directives: {
         defaultSrc: ["'self'"],
         childSrc: ["'self'"],
