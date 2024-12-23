@@ -41,7 +41,7 @@ class HttpServer {
   constructor() {
     // these are the directive requited for helment conntent security below
     this.contentSecurityPolicy = {
-      reportOnly: false,
+      reportOnly: true,
       directives: {
         defaultSrc: ["'self'"],
         childSrc: ["'self'"],
@@ -171,13 +171,14 @@ class HttpServer {
         this.app.use(compression())
         this.app.use(helmet({ frameguard: false }))
         this.app.use(helmet.hidePoweredBy({ setTo: 'Powered by Ruby on Rails.' }))
-        this.app.use(
-          helmet.contentSecurityPolicy(
-            mergeWith(this.contentSecurityPolicy, { directives: this.directives }, (o, s) =>
-              Array.isArray(o) ? o.concat(s) : undefined
+        this.contentSecurityPolicy &&
+          this.app.use(
+            helmet.contentSecurityPolicy(
+              mergeWith(this.contentSecurityPolicy, { directives: this.directives }, (o, s) =>
+                Array.isArray(o) ? o.concat(s) : undefined
+              )
             )
           )
-        )
         this.app.use(bodyParser.urlencoded({ extended: true }), bodyParser.json(), bodyParser.text())
         this.app.use(cookieParser())
         this.app.use(
