@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "an extensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -84,7 +84,7 @@
     "device": "^0.3.12",
     "express": "^4.17.1",
     "express-rate-limit": "^5.5.1",
-    "helmet": "^4.6.0",
+    "helmet": "^6.2.0",
     "is-email": "^1.0.2",
     "lodash": "^4.17.21",
     "log4js": "git+https://github.com/ddfridley/log4js-node.git#onbrowser",

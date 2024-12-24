@@ -169,9 +169,8 @@ class HttpServer {
         this.app = express()
         this.app.set('port', +(process.env.PORT || 3012))
         this.app.use(compression())
-        this.app.use(helmet({ frameguard: false }))
         this.app.use(helmet.hidePoweredBy({ setTo: 'Powered by Ruby on Rails.' }))
-        this.contentSecurityPolicy &&
+        if (this.contentSecurityPolicy)
           this.app.use(
             helmet.contentSecurityPolicy(
               mergeWith(this.contentSecurityPolicy, { directives: this.directives }, (o, s) =>
