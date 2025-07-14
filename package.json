@@ -1,6 +1,6 @@
 {
   "name": "civil-server",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "an extensible server component that can be part of other civic tech projects",
   "main": "dist/index.js",
   "scripts": {
@@ -101,8 +101,8 @@
     "react-jss": "^10.9.0",
     "sib-api-v3-sdk": "^8.4.2",
     "sniffr": "^1.2.0",
-    "socket.io": "^4.4.0",
-    "socket.io-client": "^4.4.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "stream-browserify": "^3.0.0",
     "superagent": "^5.3.1"
   },

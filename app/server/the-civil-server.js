@@ -95,6 +95,10 @@ class HttpServer {
         logger.error('theCivliServer: Uncaught Exception thrown\n', err, '\ncontinuing')
       })
     }
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.error('Unhandled Rejection at:', promise, 'reason:', reason)
+      // Log the error or handle it as needed
+    })
   }
 
   addRoutesDirectory(dirPath) {
@@ -192,6 +196,9 @@ class HttpServer {
         this.error()
         this.server = http.createServer(this.app)
         this.server.timeout = 3 * 60 * 1000
+        this.server.on('error', error => {
+          logger.error('server caught error', error)
+        })
         this.server.listen(process.env.PORT || 3012, async () => {
           logger.info('Server is listening', {
             port: this.app.get('port'),
