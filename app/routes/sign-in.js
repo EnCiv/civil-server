@@ -59,20 +59,24 @@ export const signIn = async function signIn(req, res, next) {
 }
 
 function route() {
-  let signInAttemptWindow
-  let signInWindowMessage
-  if (env === 'development') {
-    signInAttemptWindow = 60 * 1000
-    signInWindowMessage = '60 seconds'
+  if (process.env.DISABLE_RATE_LIMIT) {
+    this.app.post('/sign/in', signIn, this.setUserCookie, sendUserId)
   } else {
-    signInAttemptWindow = 24 * 60 * 60 * 1000
-    signInWindowMessage = '24 hours'
+    let signInAttemptWindow
+    let signInWindowMessage
+    if (env === 'development') {
+      signInAttemptWindow = 60 * 1000
+      signInWindowMessage = '60 seconds'
+    } else {
+      signInAttemptWindow = 24 * 60 * 60 * 1000
+      signInWindowMessage = '24 hours'
+    }
+    const apiLimiter = expressRateLimit({
+      windowMs: signInAttemptWindow,
+      max: 5,
+      message: 'Too many attempts logging in, please try again after ' + signInWindowMessage + '.',
+    })
+    this.app.post('/sign/in', apiLimiter, signIn, this.setUserCookie, sendUserId)
   }
-  const apiLimiter = expressRateLimit({
-    windowMs: signInAttemptWindow,
-    max: 2,
-    message: 'Too many attempts logging in, please try again after ' + signInWindowMessage + '.',
-  })
-  this.app.post('/sign/in', apiLimiter, signIn, this.setUserCookie, sendUserId)
 }
 export default route
