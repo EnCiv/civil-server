@@ -113,6 +113,6 @@
     "react-directory-indexer": "./dist/tools/react-directory-indexer.js"
   },
   "engines": {
-    "node": "16.16.0"
+    "node": ">=20.0.0"
   }
 }
