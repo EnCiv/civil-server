@@ -48,7 +48,6 @@ class HttpServer {
         scriptSrc: [
           "'self'",
           "'unsafe-inline'",
-          '*.fontawesome.com',
           '*.googletagmanager.com',
           'webrtc.github.io',
           '*.google-analytics.com',
@@ -56,16 +55,15 @@ class HttpServer {
         scriptSrcElem: [
           "'self'",
           "'unsafe-inline'",
-          '*.fontawesome.com',
           '*.googletagmanager.com',
           'webrtc.github.io',
           '*.google-analytics.com',
         ],
-        fontSrc: ["'self'", '*.gstatic.com', 'ka-f.fontawesome.com'],
+        fontSrc: ["'self'", '*.gstatic.com'],
         styleSrc: ["'self'", "'unsafe-inline'", '*.googleapis.com'],
         imgSrc: ["'self'", '*.cloudinary.com', 'enciv.org', '*.google-analytics.com'],
         mediaSrc: ["'self'", '*.cloudinary.com', 'blob:', 'mediastream:'],
-        connectSrc: ["'self'", 'ka-f.fontawesome.com', '*.google-analytics.com'],
+        connectSrc: ["'self'", '*.google-analytics.com'],
         frameSrc: ["'self'", 'docs.google.com'],
       },
     }
