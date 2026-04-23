@@ -73,7 +73,7 @@ function route() {
     }
     const apiLimiter = expressRateLimit({
       windowMs: signInAttemptWindow,
-      max: 5,
+      limit: 5,
       message: 'Too many attempts logging in, please try again after ' + signInWindowMessage + '.',
     })
     this.app.post('/sign/in', apiLimiter, signIn, this.setUserCookie, sendUserId)

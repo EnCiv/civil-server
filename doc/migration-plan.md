@@ -32,7 +32,7 @@
 | `marked` | ^4.0.7 | ^12.x | Med | Sync API preserved with `marked.parse()` |
 | `superagent` | ^5.3.1 | remove / replace | Low | Unmaintained; replace with native `fetch` (Node 18+) |
 | `sib-api-v3-sdk` | ^8.4.2 | `@getbrevo/brevo` ^2.x | Med | Company rebranded; SDK restructured |
-| `mongodb` | ^5.9.2 | ^6.x | Low | Minor API cleanup |
+| `mongodb` | ^5.9.2 | ^6.x | Med | Blocked by `@enciv/mongo-collections` peerDep on `^5.0.0`; upgrade together |
 | `body-parser` | ^1.19.1 | remove | Low | Built into Express 4.16+/5 |
 | `@babel/plugin-proposal-*` | ^7.16.0 | `@babel/plugin-transform-*` | Low | Proposals became transforms |
 | `webpack-cli` | ^4.9.1 | ^5.x | Low | Config syntax stable |
@@ -75,22 +75,24 @@ Update the following in one PR. All are drop-in compatible within their current 
 ```
 concurrently         ^6 → ^8
 nodemon              ^2 → ^3
-mongodb              ^5 → ^6
 express-rate-limit   ^5 → ^7
 helmet               ^6 → ^8
 webpack-cli          ^4 → ^5
 webpack-dev-server   ^4 → ^5
-prettier             ^2 → ^3
+prettier             ^2 → ^3  (+ pretty-quick ^3 → ^4)
 cypress              ^9 → ^13
+supertest            (new — added for rate-limit testing)
 ```
+
+> **mongodb skipped:** `@enciv/mongo-collections@0.0.3` declares `peerDependencies: { "mongodb": "^5.0.0" }`. Upgrading mongodb to v6 violates this constraint. The mongodb upgrade must be coordinated with a `@enciv/mongo-collections` update and is deferred to a dedicated phase after Phase 3.
 
 **Specific notes:**
 
-- **`express-rate-limit` v7:** The `onLimitReached` callback was removed. Any rate-limit handler in `routes/sign-in.js` or `routes/sign-up.js` using this option must switch to the `handler` option. The `req.rateLimit` info object is now at `res.locals.rateLimit`.
-- **`helmet` v8:** The default `crossOriginEmbedderPolicy` is now `require-corp`. If embedding third-party iframes, you may need to disable this: `helmet({ crossOriginEmbedderPolicy: false })`. The existing `contentSecurityPolicy` config in `the-civil-server.js` is unaffected.
-- **`webpack-dev-server` v5:** The `devServer.client.overlay` format has minor changes; review `webpack-dev.config.js`.
-- **`mongodb` v6:** `useUnifiedTopology` option in `earlyStart()` in `the-civil-server.js` is now ignored (was already the default). Remove it.
-- **`prettier` v3:** The config file format changes. Run `prettier --write` after upgrading to reformat.
+- **`express-rate-limit` v7:** The `onLimitReached` callback was removed (not used here). The `max` option renamed to `limit` — update `routes/sign-in.js`. The `message` string option still works. The `req.rateLimit` info object is now at `res.locals.rateLimit`.
+- **`helmet` v8:** The default `crossOriginEmbedderPolicy` is now `require-corp`. The existing code only uses `helmet.hidePoweredBy()` and `helmet.contentSecurityPolicy()` individually (not `helmet()` globally), so this default change has no effect.
+- **`webpack-dev-server` v5:** The `proxy` config must be an array. Convert `proxy: { context: () => true, '/': 'http://...' }` to `proxy: [{ context: () => true, target: 'http://...' }]` in `webpack-dev.config.js`.
+- **`prettier` v3:** The `jsxBracketSameLine` option was removed; rename to `bracketSameLine` in `.prettierrc`.
+- **`useUnifiedTopology`:** The option is removed in mongodb v6 (already a no-op in v5). Remove from `earlyStart()` in `the-civil-server.js` now so it's ready for the future mongodb upgrade.
 
 **Verify:** `npm test`, then manually start the dev server and verify the browser loads.
 

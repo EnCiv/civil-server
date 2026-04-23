@@ -50,11 +50,13 @@ module.exports = {
         warnings: false,
       },
     },
-    proxy: {
-      // the dev server will proxy all traffic other than publicPath to target below.
-      context: () => true,
-      '/': 'http://localhost:3012', // this is where the node server of the application is really running
-    },
+    proxy: [
+      {
+        // proxy all traffic other than publicPath (/assets/webpack/) to the node server
+        context: () => true,
+        target: 'http://localhost:3012', // this is where the node server of the application is really running
+      },
+    ],
     compress: true,
     devMiddleware: {
       index: '', // specify to enable root proxying

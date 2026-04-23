@@ -128,7 +128,7 @@ class HttpServer {
       // heroku is going to delete the MONGODB_URI var on Nov10 - we need something else to use in the mean time
       const MONGODB_URI = process.env.PRIMARYDB_URI || process.env.MONGODB_URI
       if (!MONGODB_URI) ko(new Error('Missing PRIMARYDB_URI or MONGODB_URI'))
-      await Mongo.connect(MONGODB_URI, { useUnifiedTopology: true })
+      await Mongo.connect(MONGODB_URI)
       return ok()
     })
   }
