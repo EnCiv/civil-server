@@ -35,7 +35,7 @@
   "homepage": "https://github.com/EnCiv/civil-server#readme",
   "optionalDependencies": {
     "@shelf/jest-mongodb": "^4.3.2",
-    "concurrently": "^8.3.0",
+    "concurrently": "^9.2.1",
     "cypress": "^13.17.0",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",

@@ -10,7 +10,6 @@ module.exports = {
   mode: 'development',
   devtool: 'source-map',
   entry: {
-    'only-dev-server': 'webpack/hot/only-dev-server', // "only" prevents reload on syntax errors
     main: './client/main-app.js',
   },
   output: {
@@ -59,7 +58,7 @@ module.exports = {
     ],
     compress: true,
     devMiddleware: {
-      index: '', // specify to enable root proxying
+      index: false, // disable index.html fallback so root requests are proxied to the node server
       publicPath: '/assets/webpack/', // in main.js also ass if(typeof ___webpack_public_path__ !== 'undefined' __webpack_public_path__ = "http://localhost:3011/assets/webpack/";  // this is where the hot loader sends requests to
     },
   },
@@ -67,7 +66,6 @@ module.exports = {
     new webpack.IgnorePlugin({ resourceRegExp: /nodemailer/ }), // not used in the client side - those should be move outside of the app directory
     new webpack.NormalModuleReplacementPlugin(/.+models\/.+/, '../models/client-side-model'), // do not include models on the client side - the app/api files contain server side and client side code
     new webpack.NormalModuleReplacementPlugin(/.+\/the-civil-server\.js$/, '/client/client-side-model'), // on the clientsite map imports of civil-server to an empty module
-    new webpack.HotModuleReplacementPlugin(), // DO NOT use --hot in the command line - it will cause a stack overflow on the client
     new webpack.ProvidePlugin({ Buffer: ['buffer', 'Buffer'] }), // Work around for Buffer is undefined: https://github.com/webpack/changelog-v5/issues/10
     new webpack.ProvidePlugin({ process: 'process/browser' }), // fix "process is not defined" error: // (do "npm install process" before running the build)
   ],
