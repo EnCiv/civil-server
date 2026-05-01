@@ -1,5 +1,5 @@
 // https://github.com/EnCiv/undebate-ssp/wiki/Send-In-Blue-Transactional
-const SibApiV3Sdk = require('sib-api-v3-sdk')
+const Brevo = require('@getbrevo/brevo')
 const path = require('path')
 const fs = require('fs') // require so it runs as is without having to bable it
 const packageJSON = require('../../package.json')
@@ -18,14 +18,14 @@ const uniqueParams = content =>
 async function SibCreateTemplate(name, templateName, htmlContent) {
   const subject = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/)[1] || templateName
   try {
-    let smtpTemplate = new SibApiV3Sdk.CreateSmtpTemplate()
+    let smtpTemplate = new Brevo.CreateSmtpTemplate()
     smtpTemplate.templateName = name
     smtpTemplate.subject = subject
     smtpTemplate.isActive = true
     smtpTemplate.htmlContent = htmlContent
     smtpTemplate.sender = { name: '[DEFAULT_FROM_NAME]', email: process.env.SENDINBLUE_DEFAULT_FROM_EMAIL }
     smtpTemplate.replyTo = '[DEFAULT_REPLY_TO]'
-    const data = await SibSMTPApi.createSmtpTemplate(smtpTemplate)
+    const { body: data } = await SibSMTPApi.createSmtpTemplate(smtpTemplate)
     return data?.id
   } catch (error) {
     logger.error(
@@ -37,7 +37,7 @@ async function SibCreateTemplate(name, templateName, htmlContent) {
 }
 
 async function SibGetTemplate(name, htmlContent) {
-  const { templates, count } = await SibSMTPApi.getSmtpTemplates()
+  const { body: { templates, count } } = await SibSMTPApi.getSmtpTemplates()
   // if new account with no templates yet, templates might be undefined
   // templates are send down with the largest template first in the list
   // older templates with the same name may appear though this seems inconsistent but the last one created will appear first becuase in the list
@@ -99,11 +99,11 @@ export async function SibGetTemplateId(htmlFile) {
 
 export function SibSendTransacEmail(props) {
   return new Promise((ok, ko) => {
-    let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail()
+    let sendSmtpEmail = new Brevo.SendSmtpEmail()
     Object.assign(sendSmtpEmail, props)
     SibSMTPApi.sendTransacEmail(sendSmtpEmail).then(
-      data => {
-        ok(data)
+      ({ body }) => {
+        ok(body)
       },
       error => {
         logger.error('sendTransacEmail got error', error?.message ? error.message : error, 'props:', props)
@@ -129,6 +129,6 @@ if (
     } else return allExist
   }, true)
 ) {
-  SibApiV3Sdk.ApiClient.instance.authentications['api-key'].apiKey = process.env.SENDINBLUE_API_KEY
-  SibSMTPApi = new SibApiV3Sdk.TransactionalEmailsApi()
+  SibSMTPApi = new Brevo.TransactionalEmailsApi()
+  SibSMTPApi.authentications['apiKey'].apiKey = process.env.SENDINBLUE_API_KEY
 }

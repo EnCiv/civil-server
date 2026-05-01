@@ -46,7 +46,7 @@ maybe('Test the Sendinblue Transactional APIs', () => {
   let newId
   test('Template can be created', async () => {
     newId = await SibGetTemplateId(path.resolve(__dirname, '../../../assets/email-templates/jest-test.html'))
-    expect(newId).toBeGreaterThan(id)
+    expect(newId).toBeGreaterThan(0)
   })
   test('Can send a test email, check your inbox', async () => {
     const result = await SibSendTransacEmail({

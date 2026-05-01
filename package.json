@@ -68,6 +68,7 @@
   "dependencies": {
     "@babel/runtime": "^7.16.3",
     "@enciv/mongo-collections": "0.0.3",
+    "@getbrevo/brevo": "^2.5.0",
     "@jest/globals": "^29.7.0",
     "@sap_oss/node-socketio-stream": "^1.0.3",
     "assert": "^2.0.0",
@@ -99,7 +100,6 @@
     "react-helmet": "^6.1.0",
     "react-hot-loader": "^4.13.0",
     "react-jss": "^10.9.0",
-    "sib-api-v3-sdk": "^8.4.2",
     "sniffr": "^1.2.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
