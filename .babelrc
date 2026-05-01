@@ -1,9 +1,9 @@
 {
-  "presets": ["@babel/preset-react", ["@babel/preset-env", { "targets": { "node": "16" } }]],
+  "presets": ["@babel/preset-react", ["@babel/preset-env", { "targets": { "node": "20" } }]],
   "plugins": [
-    "@babel/plugin-proposal-class-properties",
+    "@babel/plugin-transform-class-properties",
     "@babel/plugin-transform-runtime",
-    "@babel/plugin-proposal-object-rest-spread",
+    "@babel/plugin-transform-object-rest-spread",
     "@babel/plugin-transform-react-inline-elements"
   ]
 }
