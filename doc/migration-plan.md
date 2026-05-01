@@ -17,31 +17,31 @@
 
 ## Package Inventory and Version Targets
 
-| Package | Current | Target | Risk | Notes |
-|---------|---------|--------|------|-------|
-| **Node.js** | 16.16.0 | 20 LTS | Low | 16 is EOL; 20 is LTS |
-| `react` / `react-dom` | ^16.14.0 | ^19.x | **HIGH** | Must coordinate with civil-client |
-| `react-hot-loader` | ^4.13.0 | **remove** | High | Deprecated; replace with webpack HMR |
-| `enzyme` + adapter | ^3.11.0 | **remove** | High | Dead for React 18+; replace with @testing-library/react |
-| `react-helmet` | ^6.1.0 | `react-helmet-async` | Med | react-helmet has concurrent-mode bugs |
-| `@hapi/joi` | ^15.1.0 | `joi` ^17.x | Med | Renamed + major version; API changes in validate() |
-| `express` | ^4.17.1 | ^5.x | Med | Async error propagation now built-in |
-| `express-rate-limit` | ^5.5.1 | ^7.x | Low | `onLimitReached` removed; minor API changes |
-| `helmet` | ^6.2.0 | ^8.x | Low | Minor CSP defaults changed |
-| `marked` | ^4.0.7 | ^12.x | Med | Sync API preserved with `marked.parse()` |
-| `superagent` | ^5.3.1 | remove / replace | Low | Unmaintained; replace with native `fetch` (Node 18+) |
-| `sib-api-v3-sdk` | ^8.4.2 | `@getbrevo/brevo` ^2.x | Med | Company rebranded; SDK restructured |
-| `mongodb` | ^5.9.2 | ^6.x | Med | Blocked by `@enciv/mongo-collections` peerDep on `^5.0.0`; upgrade together |
-| `body-parser` | ^1.19.1 | remove | Low | Built into Express 4.16+/5 |
-| `@babel/plugin-proposal-*` | ^7.16.0 | `@babel/plugin-transform-*` | Low | Proposals became transforms |
-| `webpack-cli` | ^4.9.1 | ^5.x | Low | Config syntax stable |
-| `webpack-dev-server` | ^4.6.0 | ^5.x | Low | Minor config changes |
-| `concurrently` | ^6.4.0 | ^8.x | Low | Drop-in compatible |
-| `nodemon` | ^2.0.15 | ^3.x | Low | Drop-in compatible |
-| `prettier` | ^2.5.1 | ^3.x | Low | Config format changes |
-| `cypress` | ^9.1.1 | ^13.x | Low | Some selector/config changes |
-| `@storybook/*` | ^6.4.9 (civil-client) | ^8.x | Med | civil-client only; major config overhaul |
-| `log4js` (fork) | git fork | assess | Med | Evaluate if upstream supports browser or replace |
+| Package                    | Current               | Target                      | Risk     | Notes                                                                       |
+| -------------------------- | --------------------- | --------------------------- | -------- | --------------------------------------------------------------------------- |
+| **Node.js**                | 16.16.0               | 20 LTS                      | Low      | 16 is EOL; 20 is LTS                                                        |
+| `react` / `react-dom`      | ^16.14.0              | ^19.x                       | **HIGH** | Must coordinate with civil-client                                           |
+| `react-hot-loader`         | ^4.13.0               | **remove**                  | High     | Deprecated; replace with webpack HMR                                        |
+| `enzyme` + adapter         | ^3.11.0               | **remove**                  | High     | Dead for React 18+; replace with @testing-library/react                     |
+| `react-helmet`             | ^6.1.0                | `react-helmet-async`        | Med      | react-helmet has concurrent-mode bugs                                       |
+| `@hapi/joi`                | ^15.1.0               | `joi` ^17.x                 | Med      | Renamed + major version; API changes in validate()                          |
+| `express`                  | ^4.17.1               | ^5.x                        | Med      | Async error propagation now built-in                                        |
+| `express-rate-limit`       | ^5.5.1                | ^7.x                        | Low      | `onLimitReached` removed; minor API changes                                 |
+| `helmet`                   | ^6.2.0                | ^8.x                        | Low      | Minor CSP defaults changed                                                  |
+| `marked`                   | ^4.0.7                | ^12.x                       | Med      | Sync API preserved with `marked.parse()`                                    |
+| `superagent`               | ^5.3.1                | remove / replace            | Low      | Unmaintained; replace with native `fetch` (Node 18+)                        |
+| `sib-api-v3-sdk`           | ^8.4.2                | `@getbrevo/brevo` ^2.x      | Med      | Company rebranded; SDK restructured                                         |
+| `mongodb`                  | ^5.9.2                | ^6.x                        | Med      | Blocked by `@enciv/mongo-collections` peerDep on `^5.0.0`; upgrade together |
+| `body-parser`              | ^1.19.1               | remove                      | Low      | Built into Express 4.16+/5                                                  |
+| `@babel/plugin-proposal-*` | ^7.16.0               | `@babel/plugin-transform-*` | Low      | Proposals became transforms                                                 |
+| `webpack-cli`              | ^4.9.1                | ^5.x                        | Low      | Config syntax stable                                                        |
+| `webpack-dev-server`       | ^4.6.0                | ^5.x                        | Low      | Minor config changes                                                        |
+| `concurrently`             | ^6.4.0                | ^8.x                        | Low      | Drop-in compatible                                                          |
+| `nodemon`                  | ^2.0.15               | ^3.x                        | Low      | Drop-in compatible                                                          |
+| `prettier`                 | ^2.5.1                | ^3.x                        | Low      | Config format changes                                                       |
+| `cypress`                  | ^9.1.1                | ^13.x                       | Low      | Some selector/config changes                                                |
+| `@storybook/*`             | ^6.4.9 (civil-client) | ^8.x                        | Med      | civil-client only; major config overhaul                                    |
+| `log4js` (fork)            | git fork              | assess                      | Med      | Evaluate if upstream supports browser or replace                            |
 
 ---
 
@@ -54,6 +54,7 @@
 **Why first:** Node 16 is end-of-life. All subsequent package updates are tested against a supported runtime.
 
 **Steps:**
+
 1. Update `.nvmrc` / `engines` field in `package.json` to `"node": ">=20.0.0"`.
 2. Update CI/CD pipelines and Heroku/Render runtime config to Node 20.
 3. Run the full existing test suite without changing any application code.
@@ -61,6 +62,7 @@
 **Verify:** `node --version`, then `npm test`.
 
 **Tests to add:**
+
 - None required; this phase is infrastructure-only. If tests fail here, fix the root cause before proceeding.
 
 **Impact on consuming projects:** Inform them they also need Node 20+.
@@ -97,7 +99,8 @@ supertest            (new — added for rate-limit testing)
 
 **Tests to add:**
 
-*Rate limiting (new file: `app/routes/__tests__/sign-in-rate-limit.js`):*
+_Rate limiting (new file: `app/routes/__tests__/sign-in-rate-limit.js`):_
+
 ```js
 // Test that the rate limiter rejects requests after N attempts
 // Use supertest against the express app mounted with the rate-limit middleware
@@ -112,12 +115,14 @@ supertest            (new — added for rate-limit testing)
 **Why separate:** This affects the `User` model's schema validation, which is a core data-integrity mechanism used by `User.create()` in every auth flow. Consuming projects that import `User` are indirectly affected if validation error shapes change.
 
 **Current code** (`app/models/user.js`):
+
 ```js
 const Joi = require('@hapi/joi')
 const schema = Joi.object({ ... email: Joi.string().email(), ... })
 ```
 
 **Changes:**
+
 1. `npm uninstall @hapi/joi && npm install joi`
 2. Change the require to `const Joi = require('joi')`.
 3. **Breaking change:** In joi v17, `string().email()` by default uses TLD validation. If any test emails like `user@email` (no TLD) were allowed before, they will now fail. Verify test data uses valid TLDs.
@@ -127,6 +132,7 @@ const schema = Joi.object({ ... email: Joi.string().email(), ... })
 **Verify:** `npm test` — all User model tests must pass.
 
 **Tests to add** (`app/models/__tests__/user.js` — add describe block):
+
 ```js
 describe('User schema validation', () => {
   test('rejects document with invalid email format', async () => { ... })
@@ -146,24 +152,23 @@ Audit found no code in this repo imports or uses the `cloudinary` package. Refer
 
 ### Phase 5 — `marked` v4 → v12
 
-**Why separate:** `marked` is used for Markdown rendering (e.g., `doc-mddoc.js`). The API shifted significantly between major versions.
+**Why separate:** `marked` is used for Markdown rendering in `doc-mddoc.js`. The API shifted significantly between major versions.
 
 **Changes:**
+
 1. `npm install marked@^12`
-2. In v5+, `marked(text)` is still supported but deprecated; use `marked.parse(text)`.
-3. `marked.parse(text)` returns a string synchronously by default (async renderer hooks are opt-in).
-4. Lexer/parser hooks changed if any custom renderer is in use.
-5. Review `app/routes/doc-mddoc.js` for usage.
+2. Rewrote `app/routes/doc-mddoc.js`: added missing `fs` and `path` imports; fixed path-traversal vulnerability (now restricts to `assets/md/` and validates filename); uses `marked.parse(text)` to render HTML (was returning raw `text/markdown`).
+3. Created `assets/md/civil-server.md` as a test document browseable at `/doc/civil-server`.
+4. In v12, `marked(text)` still works but `marked.parse(text)` is the canonical API — used throughout.
 
-**Verify:** Load a markdown-rendered route in the browser and confirm rendering is correct.
+**Verify:** `npm test`; browse to `/doc/civil-server` in the dev server and confirm HTML renders.
 
-**Tests to add** (new file: `app/routes/__tests__/doc-mddoc.js`):
-```js
-// Test the markdown route handler:
-// - Verify that given a markdown document, the response contains expected HTML tags
-// - Verify headers (Content-Type: text/html)
-// - Verify 404 for missing document path
-```
+**Tests added** (`app/routes/__tests__/doc-mddoc.js`):
+
+- 200 + `text/html` content-type for existing document
+- Rendered HTML contains `<h1>` and `<table>` elements
+- 404 for non-existent document
+- 400 for path-traversal attempts in document name
 
 ---
 
@@ -172,12 +177,14 @@ Audit found no code in this repo imports or uses the `cloudinary` package. Refer
 **Why separate:** SendinBlue rebranded to Brevo. The v3 SDK package is unmaintained. The new SDK (`@getbrevo/brevo`) has restructured initialization and method names.
 
 **Current code** (`app/lib/send-in-blue-transactional.js`):
+
 ```js
 const SibApiV3Sdk = require('sib-api-v3-sdk')
 // ... SibSMTPApi = new SibApiV3Sdk.TransactionalEmailsApi()
 ```
 
 **Changes:**
+
 1. `npm uninstall sib-api-v3-sdk && npm install @getbrevo/brevo`
 2. Update import: `const Brevo = require('@getbrevo/brevo')`
 3. Initialization pattern changes:
@@ -185,17 +192,18 @@ const SibApiV3Sdk = require('sib-api-v3-sdk')
    const apiInstance = new Brevo.TransactionalEmailsApi()
    apiInstance.authentications['api-key'].apiKey = process.env.SENDINBLUE_API_KEY
    ```
-4. Method names are largely the same but check:  
-   - `createSmtpTemplate` → same  
-   - `getSmtpTemplates` → same  
-   - `deleteSmtpTemplate` → same  
-   - `sendTransacEmail` → same  
+4. Method names are largely the same but check:
+   - `createSmtpTemplate` → same
+   - `getSmtpTemplates` → same
+   - `deleteSmtpTemplate` → same
+   - `sendTransacEmail` → same
 5. The environment variable `SENDINBLUE_API_KEY` can remain the same name (the value works with Brevo's API).
 6. Update the exported API surface; the functions `SibGetTemplateId`, `SibSendTransacEmail`, `SibDeleteSmtpTemplate` keep the same names to avoid breaking consuming projects.
 
 **Verify:** The existing `app/lib/__tests__/send-in-blue-transactional.js` test (skipped without API key) should be runnable with a real key.
 
 **Tests to add** (extend `app/lib/__tests__/send-in-blue-transactional.js`):
+
 ```js
 // Add a unit test (no real API key needed) that mocks @getbrevo/brevo and verifies:
 // - SibGetTemplateId reads the HTML file correctly
@@ -210,12 +218,14 @@ const SibApiV3Sdk = require('sib-api-v3-sdk')
 **Why separate:** The `@babel/plugin-proposal-*` packages are deprecated and the equivalent transforms now ship as `@babel/plugin-transform-*`. Many are also now included in `@babel/preset-env` for modern targets, so explicit plugin entries may not be needed at all.
 
 **Changes in `package.json` `devDependencies`:**
+
 ```
 @babel/plugin-proposal-class-properties    → @babel/plugin-transform-class-properties
 @babel/plugin-proposal-object-rest-spread  → @babel/plugin-transform-object-rest-spread
 ```
 
 **Changes in `.babelrc` / `babel.config.js` (if present):**
+
 ```json
 // before
 "plugins": ["@babel/plugin-proposal-class-properties", ...]
@@ -224,6 +234,7 @@ const SibApiV3Sdk = require('sib-api-v3-sdk')
 ```
 
 Also evaluate:
+
 - `@babel/plugin-transform-react-inline-elements` — verify still needed with React 18 automatic JSX transform
 - `@babel/plugin-transform-regenerator` — may be handled by `@babel/preset-env` with `useBuiltIns: 'usage'`
 
@@ -241,6 +252,7 @@ Also evaluate:
 **civil-client usage:** Used for API calls from the browser; civil-client must be updated in lockstep.
 
 **Migration approach:**
+
 1. Audit all `superagent` import sites in both repos with `grep -r "superagent" app/`.
 2. Replace with `fetch` (browser-native and Node 18+ native) or a thin wrapper.
 3. Key differences: `fetch` requires `await res.json()` for body; no `.send()` chaining; error handling is different (non-2xx does not throw by default).
@@ -248,6 +260,7 @@ Also evaluate:
 **Verify:** All routes that make outbound HTTP calls (if any) work correctly.
 
 **Tests to add** (wherever superagent calls are replaced):
+
 ```js
 // Mock global.fetch and verify the calling code:
 // - passes correct URL, method, and body
@@ -257,7 +270,7 @@ Also evaluate:
 
 ---
 
-### Phase 9 — React 16 → React 19 *(Coordinate with civil-client)*
+### Phase 9 — React 16 → React 19 _(Coordinate with civil-client)_
 
 **This is the largest and highest-risk phase. It must be planned as a coordinated release across civil-server and civil-client.**
 
@@ -266,11 +279,13 @@ Also evaluate:
 `react-hot-loader` is unmaintained and incompatible with React 18+.
 
 **Changes in civil-server:**
+
 - `app/components/app.jsx`: Remove `import { hot } from 'react-hot-loader'` and the `hot(module)(App)` wrapper. Export `App` directly.
 - `app/client/main-app.js`: No change required (uses `civil-client`'s `clientMain`).
 - `webpack-dev.config.js`: The `entry.only-dev-server` `'webpack/hot/only-dev-server'` entry can be removed. Webpack 5's built-in `hot: true` HMR is sufficient.
 
 **Changes in civil-client:**
+
 - Same pattern: remove `react-hot-loader` usage from any component that wraps with `hot(module)`.
 - The `clientMain` function in civil-client likely initializes the React app; update it to use `ReactDOM.createRoot()`.
 
@@ -283,6 +298,7 @@ npm install react@^19 react-dom@^19
 **Breaking changes to address:**
 
 1. **`ReactDOM.render()` removed** — Must use `ReactDOM.createRoot()`:
+
    ```js
    // Before (React 16)
    ReactDOM.render(<App />, document.getElementById('root'))
@@ -290,6 +306,7 @@ npm install react@^19 react-dom@^19
    const root = ReactDOM.createRoot(document.getElementById('root'))
    root.render(<App />)
    ```
+
    This change is in civil-client's `clientMain`. Update civil-client first.
 
 2. **`renderToString` (server-side)** — Still works in React 19 but the output may differ slightly (no `data-reactroot` attribute). The `server-react-render.jsx` file uses `renderToString` from `react-dom/server`; verify SSR hydration still works.
@@ -299,12 +316,15 @@ npm install react@^19 react-dom@^19
 4. **Strict Mode** — React 19 in StrictMode mounts/unmounts/remounts components in development. Effects and subscriptions must be cleanup-safe. Review any socket.io connection setup in components.
 
 5. **`react-helmet`** — Has concurrent-mode issues in React 18+. Replace with `react-helmet-async`:
+
    ```
    npm uninstall react-helmet && npm install react-helmet-async
    ```
+
    API is nearly identical; wrap the app in `<HelmetProvider>`. This affects both `server-react-render.jsx` and `app.jsx`.
-   
+
    In `server-react-render.jsx`:
+
    ```jsx
    // Before: const helmet = Helmet.renderStatic()
    // After: const { helmet } = helmetContext; (from HelmetProvider context)
@@ -317,6 +337,7 @@ npm install react@^19 react-dom@^19
 `enzyme-adapter-react-16` does not support React 18+. The `jest-test-setup.js` currently configures Enzyme.
 
 **Steps:**
+
 1. `npm uninstall enzyme enzyme-adapter-react-16 jest-enzyme`
 2. `npm install --save-optional @testing-library/react @testing-library/jest-dom`
 3. Update `jest-test-setup.js`: remove Enzyme configure; add `@testing-library/jest-dom` matchers.
@@ -324,7 +345,8 @@ npm install react@^19 react-dom@^19
 
 **Tests to add** for React migration (new files):
 
-*`app/components/__tests__/app.test.jsx`:*
+_`app/components/__tests__/app.test.jsx`:_
+
 ```js
 // Using @testing-library/react, render the App component
 // Verify: renders without crashing with no props
@@ -333,7 +355,8 @@ npm install react@^19 react-dom@^19
 // Verify: ErrorBoundary catches a component error and doesn't crash the page
 ```
 
-*`app/server/routes/__tests__/server-react-render.test.js`:*
+_`app/server/routes/__tests__/server-react-render.test.js`:_
+
 ```js
 // Unit test the serverReactRender function (mock req/res)
 // Verify: returns HTML string containing expected structure
@@ -346,7 +369,7 @@ npm install react@^19 react-dom@^19
 
 ---
 
-### Phase 10 — `express` v4 → v5 *(Optional — Evaluate after Phase 9)*
+### Phase 10 — `express` v4 → v5 _(Optional — Evaluate after Phase 9)_
 
 Express 5 became stable in 2024. The main benefit for this codebase is native async error propagation — the `try/catch` wrappers in routes like `sign-in.js` and `sign-up.js` become unnecessary.
 
@@ -362,6 +385,7 @@ Express 5 became stable in 2024. The main benefit for this codebase is native as
    ```
 
 **Tests to add** (`app/routes/__tests__/sign-up.js` — new file):
+
 ```js
 // Using supertest, mount sign-up route on an express 5 app
 // Verify: missing email → 400
@@ -377,11 +401,13 @@ Express 5 became stable in 2024. The main benefit for this codebase is native as
 The `log4js` dependency points to a custom GitHub fork (`ddfridley/log4js-node#onbrowser`) that adds browser support. This is a long-term technical debt item.
 
 **Options:**
+
 1. **Keep the fork and update it** to the latest upstream log4js if the fork is diverged.
 2. **Replace with a browser-compatible logger** such as `loglevel`, `pino` (Node) + a browser shim, or a custom thin wrapper around `console` for the browser and a structured logger for Node.
 3. **Evaluate if log4js is actually needed in the browser** — browser logs appear to be sent via socket to the server (`browserMongoAppender`). If this feature is important, keep the fork.
 
 **Tests to add** (new file: `app/server/__tests__/logger-setup.js`):
+
 ```js
 // Verify logger is initialized (global.logger is defined)
 // Verify bslogger (browser socket logger) is defined
@@ -395,6 +421,7 @@ The `log4js` dependency points to a custom GitHub fork (`ddfridley/log4js-node#o
 This phase is scoped entirely to the civil-client repo. Storybook 8 has a completely different config directory format (`.storybook/`) and the webpack5 builder is now the default.
 
 **Steps in civil-client:**
+
 1. Run `npx storybook@latest upgrade` — this runs the automated migration codemod.
 2. Update `.storybook/main.js` format as prompted.
 3. Remove `@storybook/builder-webpack5` and `@storybook/manager-webpack5` (now built in).
@@ -407,17 +434,17 @@ This phase is scoped entirely to the civil-client repo. Storybook 8 has a comple
 
 The table below maps each phase to tests that should be written **before and after** the migration change to catch regressions.
 
-| Phase | New Test File(s) | Key Assertions |
-|-------|-----------------|----------------|
-| 2 | `routes/__tests__/sign-in-rate-limit.js` | 429 after limit; correct handler option |
-| 3 | `models/__tests__/user.js` (extend) | joi v17 email validation; error shapes |
-| 5 | `routes/__tests__/doc-mddoc.js` | Markdown HTML output; 404 for missing doc |
-| 6 | `lib/__tests__/send-in-blue-transactional.js` (extend) | Mock Brevo SDK; graceful missing-key handling |
-| 8 | (per superagent call site) | fetch mock; correct URL/body/error handling |
-| 9 | `components/__tests__/app.test.jsx` | React 19 render; ErrorBoundary; iota prop |
-| 9 | `server/routes/__tests__/server-react-render.test.js` | SSR HTML; helmet tags; JSS styles |
-| 10 | `routes/__tests__/sign-up.js` | All sign-up branch outcomes via supertest |
-| 11 | `server/__tests__/logger-setup.js` | Logger init; no-throw on log calls |
+| Phase | New Test File(s)                                       | Key Assertions                                |
+| ----- | ------------------------------------------------------ | --------------------------------------------- |
+| 2     | `routes/__tests__/sign-in-rate-limit.js`               | 429 after limit; correct handler option       |
+| 3     | `models/__tests__/user.js` (extend)                    | joi v17 email validation; error shapes        |
+| 5     | `routes/__tests__/doc-mddoc.js`                        | Markdown HTML output; 404 for missing doc     |
+| 6     | `lib/__tests__/send-in-blue-transactional.js` (extend) | Mock Brevo SDK; graceful missing-key handling |
+| 8     | (per superagent call site)                             | fetch mock; correct URL/body/error handling   |
+| 9     | `components/__tests__/app.test.jsx`                    | React 19 render; ErrorBoundary; iota prop     |
+| 9     | `server/routes/__tests__/server-react-render.test.js`  | SSR HTML; helmet tags; JSS styles             |
+| 10    | `routes/__tests__/sign-up.js`                          | All sign-up branch outcomes via supertest     |
+| 11    | `server/__tests__/logger-setup.js`                     | Logger init; no-throw on log calls            |
 
 ---
 
@@ -427,14 +454,14 @@ Before releasing any phase that changes the exported API, publish a pre-release 
 
 **API surface changes by phase:**
 
-| Phase | Change | Consuming Project Impact |
-|-------|--------|--------------------------|
-| 3 | Joi v17 error messages differ | Any project inspecting `User.validate()` error text |
-| 6 | Brevo SDK init; env var name preserved | Projects using `SibSendTransacEmail` directly |
-| 9a | `App` exported directly (no `hot` wrapper) | Any project importing `App` from civil-server |
-| 9b | React 19; `createRoot` in civil-client | civil-client must be updated in lockstep |
-| 9b | `react-helmet` → `react-helmet-async`; needs `<HelmetProvider>` | Projects wrapping the app need HelmetProvider |
-| 10 | `body-parser` removed | Consuming projects must use `express.json()` themselves if they depend on body-parser being already mounted |
+| Phase | Change                                                          | Consuming Project Impact                                                                                    |
+| ----- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 3     | Joi v17 error messages differ                                   | Any project inspecting `User.validate()` error text                                                         |
+| 6     | Brevo SDK init; env var name preserved                          | Projects using `SibSendTransacEmail` directly                                                               |
+| 9a    | `App` exported directly (no `hot` wrapper)                      | Any project importing `App` from civil-server                                                               |
+| 9b    | React 19; `createRoot` in civil-client                          | civil-client must be updated in lockstep                                                                    |
+| 9b    | `react-helmet` → `react-helmet-async`; needs `<HelmetProvider>` | Projects wrapping the app need HelmetProvider                                                               |
+| 10    | `body-parser` removed                                           | Consuming projects must use `express.json()` themselves if they depend on body-parser being already mounted |
 
 ---
 
@@ -457,6 +484,7 @@ main
 ```
 
 Each branch should:
+
 1. Install the new package(s).
 2. Write (or update) the tests called out in the phase.
 3. Verify the new tests pass.

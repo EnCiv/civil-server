@@ -135,7 +135,12 @@ describe('User.validate schema (joi)', () => {
   })
 
   test('accepts empty activationToken and activationKey strings', () => {
-    const { error } = User.validate({ email: 'test@example.com', password: 'abc', activationToken: '', activationKey: '' })
+    const { error } = User.validate({
+      email: 'test@example.com',
+      password: 'abc',
+      activationToken: '',
+      activationKey: '',
+    })
     expect(error).toBeUndefined()
   })
 
