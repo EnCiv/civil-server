@@ -5,4 +5,6 @@ export {
   SibSendTransacEmail as BrevoSendTransacEmail,
   SibGetTemplateId as BrevoGetTemplateId,
   SibDeleteSmtpTemplate as BrevoDeleteSmtpTemplate,
+  brevoApiKey,
+  brevoDefaultFromEmail,
 } from './send-in-blue-transactional'

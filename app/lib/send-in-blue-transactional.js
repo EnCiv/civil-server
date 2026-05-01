@@ -23,7 +23,7 @@ async function SibCreateTemplate(name, templateName, htmlContent) {
     smtpTemplate.subject = subject
     smtpTemplate.isActive = true
     smtpTemplate.htmlContent = htmlContent
-    smtpTemplate.sender = { name: '[DEFAULT_FROM_NAME]', email: process.env.SENDINBLUE_DEFAULT_FROM_EMAIL }
+    smtpTemplate.sender = { name: '[DEFAULT_FROM_NAME]', email: brevoDefaultFromEmail }
     smtpTemplate.replyTo = '[DEFAULT_REPLY_TO]'
     const { body: data } = await SibSMTPApi.createSmtpTemplate(smtpTemplate)
     return data?.id
@@ -121,14 +121,15 @@ export function SibDeleteSmtpTemplate(id) {
   })
 }
 
-if (
-  ['SENDINBLUE_API_KEY', 'SENDINBLUE_DEFAULT_FROM_EMAIL'].reduce((allExist, name) => {
-    if (!process.env[name]) {
-      logger.error('env ', name, 'not set. email sending disabled.')
-      return false
-    } else return allExist
-  }, true)
-) {
+// Support both legacy SENDINBLUE_* and new BREVO_* env var names.
+// BREVO_* takes precedence if both are set.
+export const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY
+export const brevoDefaultFromEmail = process.env.BREVO_DEFAULT_FROM_EMAIL || process.env.SENDINBLUE_DEFAULT_FROM_EMAIL
+
+if (brevoApiKey && brevoDefaultFromEmail) {
   SibSMTPApi = new Brevo.TransactionalEmailsApi()
-  SibSMTPApi.authentications['apiKey'].apiKey = process.env.SENDINBLUE_API_KEY
+  SibSMTPApi.authentications['apiKey'].apiKey = brevoApiKey
+} else {
+  if (!brevoApiKey) logger.error('env ', 'BREVO_API_KEY (or SENDINBLUE_API_KEY)', 'not set. email sending disabled.')
+  if (!brevoDefaultFromEmail) logger.error('env ', 'BREVO_DEFAULT_FROM_EMAIL (or SENDINBLUE_DEFAULT_FROM_EMAIL)', 'not set. email sending disabled.')
 }

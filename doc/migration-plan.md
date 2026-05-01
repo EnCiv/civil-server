@@ -174,42 +174,36 @@ Audit found no code in this repo imports or uses the `cloudinary` package. Refer
 
 ### Phase 6 — `sib-api-v3-sdk` → `@getbrevo/brevo`
 
-**Why separate:** SendinBlue rebranded to Brevo. The v3 SDK package is unmaintained. The new SDK (`@getbrevo/brevo`) has restructured initialization and method names.
+**Why separate:** SendinBlue rebranded to Brevo. The v3 SDK package is unmaintained. The new SDK (`@getbrevo/brevo`) has restructured initialization and response shapes.
 
-**Current code** (`app/lib/send-in-blue-transactional.js`):
+**Changes made:**
 
-```js
-const SibApiV3Sdk = require('sib-api-v3-sdk')
-// ... SibSMTPApi = new SibApiV3Sdk.TransactionalEmailsApi()
-```
-
-**Changes:**
-
-1. `npm uninstall sib-api-v3-sdk && npm install @getbrevo/brevo`
-2. Update import: `const Brevo = require('@getbrevo/brevo')`
-3. Initialization pattern changes:
+1. `npm uninstall sib-api-v3-sdk && npm install @getbrevo/brevo@^2`
+2. `app/lib/send-in-blue-transactional.js`: `require('@getbrevo/brevo')` replacing `sib-api-v3-sdk`.
+3. **Breaking — init pattern:** `ApiClient` singleton is gone in v2. Auth is set per-instance, and the auth key name changed:
    ```js
-   const apiInstance = new Brevo.TransactionalEmailsApi()
-   apiInstance.authentications['api-key'].apiKey = process.env.SENDINBLUE_API_KEY
+   // Before
+   SibApiV3Sdk.ApiClient.instance.authentications['api-key'].apiKey = process.env.SENDINBLUE_API_KEY
+   SibSMTPApi = new SibApiV3Sdk.TransactionalEmailsApi()
+   // After
+   SibSMTPApi = new Brevo.TransactionalEmailsApi()
+   SibSMTPApi.authentications['apiKey'].apiKey = process.env.SENDINBLUE_API_KEY
    ```
-4. Method names are largely the same but check:
-   - `createSmtpTemplate` → same
-   - `getSmtpTemplates` → same
-   - `deleteSmtpTemplate` → same
-   - `sendTransacEmail` → same
-5. The environment variable `SENDINBLUE_API_KEY` can remain the same name (the value works with Brevo's API).
-6. Update the exported API surface; the functions `SibGetTemplateId`, `SibSendTransacEmail`, `SibDeleteSmtpTemplate` keep the same names to avoid breaking consuming projects.
+4. **Breaking — response shape:** All SDK methods now return `{ response, body }` instead of the body directly. Unwrapped `body` at all three call sites: `createSmtpTemplate`, `getSmtpTemplates`, `sendTransacEmail`.
+5. The environment variable `SENDINBLUE_API_KEY` is unchanged.
+6. **New: `app/lib/brevo-transactional.js`** — re-exports the same three functions under preferred `Brevo*` names:
+   - `BrevoSendTransacEmail`, `BrevoGetTemplateId`, `BrevoDeleteSmtpTemplate`
+   The `Sib*` names are kept for backwards compatibility and are deprecated. Consuming projects should migrate to the `Brevo*` names.
+7. **Dual env var support:** Both `BREVO_API_KEY` / `BREVO_DEFAULT_FROM_EMAIL` (preferred) and the legacy `SENDINBLUE_API_KEY` / `SENDINBLUE_DEFAULT_FROM_EMAIL` are accepted. `BREVO_*` takes precedence if both are set. The resolved values are exported as `brevoApiKey` and `brevoDefaultFromEmail` so consuming code (e.g. `send-password.js`) uses the same resolved value rather than reading env vars directly.
+8. **`app/lib/brevo-transactional.js`** also re-exports `brevoApiKey` and `brevoDefaultFromEmail`.
+9. **`app/index.js`** exports `brevoApiKey` and `brevoDefaultFromEmail` alongside the function aliases.
+10. **`app/socket-apis/send-password.js`** updated to import and use `brevoDefaultFromEmail` instead of `process.env.SENDINBLUE_DEFAULT_FROM_EMAIL` directly.
 
-**Verify:** The existing `app/lib/__tests__/send-in-blue-transactional.js` test (skipped without API key) should be runnable with a real key.
+**Verify:** `npm test`; run with `SENDINBLUE_API_KEY` set to exercise the live API suite.
 
-**Tests to add** (extend `app/lib/__tests__/send-in-blue-transactional.js`):
-
-```js
-// Add a unit test (no real API key needed) that mocks @getbrevo/brevo and verifies:
-// - SibGetTemplateId reads the HTML file correctly
-// - SibSendTransacEmail passes correct template ID and params to Brevo API
-// - Missing API key logs a warning and returns gracefully
-```
+**Tests:**
+- `app/lib/__tests__/send-in-blue-transactional.js`: fixed `'Template can be created'` assertion — Brevo v2 does not guarantee monotonically increasing IDs after delete/recreate; now asserts `> 0`.
+- `app/lib/__tests__/brevo-transactional.js` (new): verifies each `Brevo*` export is the exact same function reference as its `Sib*` counterpart. Uses no live API calls, avoiding parallel-test interference with the `send-in-blue-transactional` suite.
 
 ---
 
@@ -457,7 +451,7 @@ Before releasing any phase that changes the exported API, publish a pre-release 
 | Phase | Change                                                          | Consuming Project Impact                                                                                    |
 | ----- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | 3     | Joi v17 error messages differ                                   | Any project inspecting `User.validate()` error text                                                         |
-| 6     | Brevo SDK init; env var name preserved                          | Projects using `SibSendTransacEmail` directly                                                               |
+| 6     | Brevo SDK init; env var name preserved; `Sib*` names kept (deprecated); new `Brevo*` aliases added | Projects using `SibSendTransacEmail` etc. still work; migrate to `Brevo*` names |
 | 9a    | `App` exported directly (no `hot` wrapper)                      | Any project importing `App` from civil-server                                                               |
 | 9b    | React 19; `createRoot` in civil-client                          | civil-client must be updated in lockstep                                                                    |
 | 9b    | `react-helmet` → `react-helmet-async`; needs `<HelmetProvider>` | Projects wrapping the app need HelmetProvider                                                               |
