@@ -28,7 +28,6 @@
 | `express` | ^4.17.1 | ^5.x | Med | Async error propagation now built-in |
 | `express-rate-limit` | ^5.5.1 | ^7.x | Low | `onLimitReached` removed; minor API changes |
 | `helmet` | ^6.2.0 | ^8.x | Low | Minor CSP defaults changed |
-| `cloudinary` | ^1.27.1 | ^2.x | Med | SDK restructured; init API changed |
 | `marked` | ^4.0.7 | ^12.x | Med | Sync API preserved with `marked.parse()` |
 | `superagent` | ^5.3.1 | remove / replace | Low | Unmaintained; replace with native `fetch` (Node 18+) |
 | `sib-api-v3-sdk` | ^8.4.2 | `@getbrevo/brevo` ^2.x | Med | Company rebranded; SDK restructured |
@@ -139,25 +138,9 @@ describe('User schema validation', () => {
 
 ---
 
-### Phase 4 — `cloudinary` v1 → v2
+### Phase 4 — `cloudinary` ~~v1 → v2~~ (removed)
 
-**Why separate:** Cloudinary is used for media uploads. The v2 SDK has a restructured initialization API. Failure here breaks any image/video upload functionality.
-
-**Changes:**
-1. `npm install cloudinary@^2`
-2. v2 init: `const { v2: cloudinary } = require('cloudinary')` — the default export no longer has `.v2`. Review any file importing cloudinary and update accordingly.
-3. The `cloudinary.config()` call signature is the same.
-4. Upload callbacks are now fully promise-based (callback style removed).
-
-**Verify:** Run any cloudinary-related integration tests if they exist; otherwise manually test a media upload in dev.
-
-**Tests to add** (new file: `app/socket-apis/__tests__/cloudinary-upload.js` — only if upload logic lives in socket-apis):
-```js
-// Mock cloudinary v2 and verify the upload handler:
-// - calls cloudinary.uploader.upload with correct params
-// - handles successful response
-// - handles upload error and calls cb with error string
-```
+Audit found no code in this repo imports or uses the `cloudinary` package. References to Cloudinary URLs in the codebase are plain strings that require no SDK. The package has been removed from `dependencies` in `package.json`.
 
 ---
 
