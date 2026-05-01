@@ -31,7 +31,9 @@ maybeNot('Is Sendinblue environment setup for testing?', () => {
 })
 maybe('Test the Sendinblue Transactional APIs', () => {
   test('Template does not exist', async () => {
-    const id = await SibGetTemplateId(path.resolve(__dirname, '../../../assets/email-templates/invalid-template-name.html'))
+    const id = await SibGetTemplateId(
+      path.resolve(__dirname, '../../../assets/email-templates/invalid-template-name.html')
+    )
     expect(id).toBeFalsy()
     expect(global.logger.error.mock.results[0].value[0]).toMatch('SibGetTemplateId caught error')
     expect(global.logger.error.mock.results[0].value[1]).toMatch(/^ENOENT: no such file or directory.+/)

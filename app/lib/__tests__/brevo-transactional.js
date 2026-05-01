@@ -18,4 +18,3 @@ describe('brevo-transactional re-exports', () => {
     expect(BrevoSendTransacEmail).toBe(SibSendTransacEmail)
   })
 })
-

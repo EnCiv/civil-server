@@ -37,7 +37,9 @@ async function SibCreateTemplate(name, templateName, htmlContent) {
 }
 
 async function SibGetTemplate(name, htmlContent) {
-  const { body: { templates, count } } = await SibSMTPApi.getSmtpTemplates()
+  const {
+    body: { templates, count },
+  } = await SibSMTPApi.getSmtpTemplates()
   // if new account with no templates yet, templates might be undefined
   // templates are send down with the largest template first in the list
   // older templates with the same name may appear though this seems inconsistent but the last one created will appear first becuase in the list
@@ -80,12 +82,12 @@ export async function SibGetTemplateId(htmlFile) {
     const htmlContent = fs.readFileSync(htmlFile, 'utf8')
     if (!htmlContent) return undefined
     const templateName = path.basename(htmlFile, '.html')
-    
+
     // Extract repo name from path - find the directory just before "assets"
     const pathParts = path.normalize(htmlFile).split(path.sep)
     const assetsIndex = pathParts.findIndex(part => part === 'assets')
     const repoName = assetsIndex > 0 ? pathParts[assetsIndex - 1] : 'unknown-repo'
-    
+
     const name = repoName + '/' + templateName
     const template = await SibGetTemplate(name, htmlContent)
     if (template) return template.id
@@ -131,5 +133,10 @@ if (brevoApiKey && brevoDefaultFromEmail) {
   SibSMTPApi.authentications['apiKey'].apiKey = brevoApiKey
 } else {
   if (!brevoApiKey) logger.error('env ', 'BREVO_API_KEY (or SENDINBLUE_API_KEY)', 'not set. email sending disabled.')
-  if (!brevoDefaultFromEmail) logger.error('env ', 'BREVO_DEFAULT_FROM_EMAIL (or SENDINBLUE_DEFAULT_FROM_EMAIL)', 'not set. email sending disabled.')
+  if (!brevoDefaultFromEmail)
+    logger.error(
+      'env ',
+      'BREVO_DEFAULT_FROM_EMAIL (or SENDINBLUE_DEFAULT_FROM_EMAIL)',
+      'not set. email sending disabled.'
+    )
 }

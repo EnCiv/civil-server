@@ -193,7 +193,7 @@ Audit found no code in this repo imports or uses the `cloudinary` package. Refer
 5. The environment variable `SENDINBLUE_API_KEY` is unchanged.
 6. **New: `app/lib/brevo-transactional.js`** — re-exports the same three functions under preferred `Brevo*` names:
    - `BrevoSendTransacEmail`, `BrevoGetTemplateId`, `BrevoDeleteSmtpTemplate`
-   The `Sib*` names are kept for backwards compatibility and are deprecated. Consuming projects should migrate to the `Brevo*` names.
+     The `Sib*` names are kept for backwards compatibility and are deprecated. Consuming projects should migrate to the `Brevo*` names.
 7. **Dual env var support:** Both `BREVO_API_KEY` / `BREVO_DEFAULT_FROM_EMAIL` (preferred) and the legacy `SENDINBLUE_API_KEY` / `SENDINBLUE_DEFAULT_FROM_EMAIL` are accepted. `BREVO_*` takes precedence if both are set. The resolved values are exported as `brevoApiKey` and `brevoDefaultFromEmail` so consuming code (e.g. `send-password.js`) uses the same resolved value rather than reading env vars directly.
 8. **`app/lib/brevo-transactional.js`** also re-exports `brevoApiKey` and `brevoDefaultFromEmail`.
 9. **`app/index.js`** exports `brevoApiKey` and `brevoDefaultFromEmail` alongside the function aliases.
@@ -202,6 +202,7 @@ Audit found no code in this repo imports or uses the `cloudinary` package. Refer
 **Verify:** `npm test`; run with `SENDINBLUE_API_KEY` set to exercise the live API suite.
 
 **Tests:**
+
 - `app/lib/__tests__/send-in-blue-transactional.js`: fixed `'Template can be created'` assertion — Brevo v2 does not guarantee monotonically increasing IDs after delete/recreate; now asserts `> 0`.
 - `app/lib/__tests__/brevo-transactional.js` (new): verifies each `Brevo*` export is the exact same function reference as its `Sib*` counterpart. Uses no live API calls, avoiding parallel-test interference with the `send-in-blue-transactional` suite.
 
@@ -448,14 +449,14 @@ Before releasing any phase that changes the exported API, publish a pre-release 
 
 **API surface changes by phase:**
 
-| Phase | Change                                                          | Consuming Project Impact                                                                                    |
-| ----- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 3     | Joi v17 error messages differ                                   | Any project inspecting `User.validate()` error text                                                         |
-| 6     | Brevo SDK init; env var name preserved; `Sib*` names kept (deprecated); new `Brevo*` aliases added | Projects using `SibSendTransacEmail` etc. still work; migrate to `Brevo*` names |
-| 9a    | `App` exported directly (no `hot` wrapper)                      | Any project importing `App` from civil-server                                                               |
-| 9b    | React 19; `createRoot` in civil-client                          | civil-client must be updated in lockstep                                                                    |
-| 9b    | `react-helmet` → `react-helmet-async`; needs `<HelmetProvider>` | Projects wrapping the app need HelmetProvider                                                               |
-| 10    | `body-parser` removed                                           | Consuming projects must use `express.json()` themselves if they depend on body-parser being already mounted |
+| Phase | Change                                                                                             | Consuming Project Impact                                                                                    |
+| ----- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 3     | Joi v17 error messages differ                                                                      | Any project inspecting `User.validate()` error text                                                         |
+| 6     | Brevo SDK init; env var name preserved; `Sib*` names kept (deprecated); new `Brevo*` aliases added | Projects using `SibSendTransacEmail` etc. still work; migrate to `Brevo*` names                             |
+| 9a    | `App` exported directly (no `hot` wrapper)                                                         | Any project importing `App` from civil-server                                                               |
+| 9b    | React 19; `createRoot` in civil-client                                                             | civil-client must be updated in lockstep                                                                    |
+| 9b    | `react-helmet` → `react-helmet-async`; needs `<HelmetProvider>`                                    | Projects wrapping the app need HelmetProvider                                                               |
+| 10    | `body-parser` removed                                                                              | Consuming projects must use `express.json()` themselves if they depend on body-parser being already mounted |
 
 ---
 
