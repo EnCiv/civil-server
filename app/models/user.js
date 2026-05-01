@@ -1,5 +1,5 @@
 'use strict'
-const Joi = require('@hapi/joi')
+const Joi = require('joi')
 const { Collection } = require('@enciv/mongo-collections')
 const bcrypt = require('bcrypt')
 const { randomString } = require('../lib/random-string')
@@ -8,7 +8,7 @@ const { base64url } = require('../lib/base64url')
 const schema = Joi.object({
   _id: Joi.object(),
   name: Joi.string(),
-  email: Joi.string().email(),
+  email: Joi.string().email({ tlds: { allow: false } }),
   password: Joi.string(),
   firstName: Joi.string(),
   lastName: Joi.string(),

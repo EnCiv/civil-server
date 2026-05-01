@@ -122,3 +122,32 @@ describe('resetPassword method', () => {
     expect(await User.validatePassword(updatedUser, newPassword)).toBeTruthy()
   })
 })
+
+describe('User.validate schema (joi)', () => {
+  test('accepts a valid user document', () => {
+    const { error } = User.validate({ email: 'test@example.com', password: 'abc', firstName: 'A', lastName: 'B' })
+    expect(error).toBeUndefined()
+  })
+
+  test('accepts document with optional fields omitted', () => {
+    const { error } = User.validate({ email: 'test@example.com', password: 'abc' })
+    expect(error).toBeUndefined()
+  })
+
+  test('accepts empty activationToken and activationKey strings', () => {
+    const { error } = User.validate({ email: 'test@example.com', password: 'abc', activationToken: '', activationKey: '' })
+    expect(error).toBeUndefined()
+  })
+
+  test('rejects invalid email format', () => {
+    const { error } = User.validate({ email: 'not-an-email', password: 'abc' })
+    expect(error).toBeDefined()
+    expect(error.message).toMatch(/email/)
+  })
+
+  test('validate returns error object rather than throwing', () => {
+    expect(() => User.validate({ email: 'bad' })).not.toThrow()
+    const result = User.validate({ email: 'bad' })
+    expect(result).toHaveProperty('error')
+  })
+})
