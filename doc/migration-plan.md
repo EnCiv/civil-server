@@ -239,29 +239,15 @@ Also evaluate:
 
 ---
 
-### Phase 8 — `superagent` → native `fetch`
+### Phase 8 — `superagent` removal (unused)
 
-**Why separate:** `superagent` is unmaintained as of 2024. Node 18+ ships `fetch` natively. civil-client also uses superagent.
+**Audit result:** `superagent` was listed in `dependencies` in `package.json` but is not imported anywhere in `app/`. No call sites exist in civil-server. The package has been removed.
 
-**civil-server usage:** `superagent` appears in `package.json` but grep for actual usages in server-side code first.  
-**civil-client usage:** Used for API calls from the browser; civil-client must be updated in lockstep.
+**civil-client usage:** civil-client may use superagent for browser-side API calls; that is a separate concern scoped to the civil-client repo and does not affect civil-server.
 
-**Migration approach:**
-
-1. Audit all `superagent` import sites in both repos with `grep -r "superagent" app/`.
-2. Replace with `fetch` (browser-native and Node 18+ native) or a thin wrapper.
-3. Key differences: `fetch` requires `await res.json()` for body; no `.send()` chaining; error handling is different (non-2xx does not throw by default).
-
-**Verify:** All routes that make outbound HTTP calls (if any) work correctly.
-
-**Tests to add** (wherever superagent calls are replaced):
-
-```js
-// Mock global.fetch and verify the calling code:
-// - passes correct URL, method, and body
-// - handles 200 and non-200 responses
-// - handles network error
-```
+**Changes:**
+1. `npm uninstall superagent` — removed from `dependencies` and `node_modules`.
+2. No application code changes required.
 
 ---
 
