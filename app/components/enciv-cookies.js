@@ -8,6 +8,33 @@ const CConsentStyleHelmet = () => (
   </Helmet>
 )
 
+function startAnalytics() {
+  if (!window.process.env.GOOGLE_ANALYTICS) return
+  if (document.getElementById('googletagmanager')) return
+
+  window.dataLayer = window.dataLayer || []
+  window.gtag = function () {
+    window.dataLayer.push(arguments)
+  }
+  window.gtag('js', new Date())
+  window.gtag('config', `${window.process.env.GOOGLE_ANALYTICS}`)
+
+  const script = document.createElement('script')
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${window.process.env.GOOGLE_ANALYTICS}`
+  script.id = 'googletagmanager'
+  script.async = true
+  document.head.appendChild(script)
+  console.log('Starting analytics')
+}
+
+function stopAnalytics() {
+  console.log('Stopping analytics')
+  delete window.dataLayer
+  delete window.gtag
+  const gtmElement = document.getElementById('googletagmanager')
+  if (gtmElement) gtmElement.remove()
+}
+
 function EncivCookies(props) {
   const { user } = props
   const [cookie, setCookie] = useState()
@@ -23,16 +50,18 @@ function EncivCookies(props) {
     const userId = user?.id || user?.tempId
     const synuser = { synuser: { id: userId } }
 
-    const consent = CookieConsent.getCookie()
+    const consent = CookieConsent.getCookie() || {}
+    const categories = Array.isArray(consent.categories) ? consent.categories : []
+    const consentServices = consent.services || {}
 
     // Retrieve information from lookups and format
     let formattedConsentData = []
     for (const category of Object.keys(modalSections)) {
       formattedConsentData.push({
         category: category,
-        isGranted: consent.categories.includes(category),
+        isGranted: categories.includes(category),
         terms: modalSections[category].description,
-        services: consent.services[category],
+        services: consentServices[category],
       })
     }
 
@@ -40,6 +69,9 @@ function EncivCookies(props) {
     window.socket.emit('save-consent', synuser, formattedConsentData, () => {
       console.log('Consent data successfully saved.')
     })
+
+    if (categories.includes('analytics')) startAnalytics()
+    else stopAnalytics()
   }, [cookie])
 
   useEffect(() => {
@@ -81,6 +113,9 @@ function EncivCookies(props) {
         },
       },
     })
+
+    // Apply existing saved consent on first load for returning users.
+    setCookie(CookieConsent.getCookie())
   }, [])
 
   // The sections that show in the consent modal
@@ -106,27 +141,8 @@ function EncivCookies(props) {
     analytics: [
       {
         label: 'Google Analytics',
-        onAccept: () => {
-          if (window.process.env.GOOGLE_ANALYTICS) {
-            // using window.process becase there's a process.env that's different
-            window.dataLayer = window.dataLayer || []
-            window.gtag = function () {
-              dataLayer.push(arguments)
-            }
-            gtag('js', new Date())
-            gtag('config', `${window.process.env.GOOGLE_ANALYTICS}`)
-            const script = document.createElement('script') // create a script DOM node
-            script.src = `https://www.googletagmanager.com/gtag/js?id=${window.process.env.GOOGLE_ANALYTICS}`
-            script.id = 'googletagmanager' // so we can find it and delete it if needed
-            document.head.appendChild(script)
-          }
-        },
-        onReject: () => {
-          delete window.dataLayer
-          delete window.gtag
-          const gtmElement = document.getElementById('googletagmanager')
-          if (gtmElement) gtmElement.remove()
-        },
+        onAccept: () => {},
+        onReject: () => {},
       },
     ],
   }

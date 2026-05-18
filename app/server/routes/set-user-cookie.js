@@ -7,9 +7,42 @@ const COOKIE = {
   httpOnly: true,
 }
 
+function parseConsentCookie(consentCookie) {
+  if (!consentCookie) return undefined
+  if (typeof consentCookie === 'object') return consentCookie
+
+  try {
+    return JSON.parse(consentCookie)
+  } catch (error) {
+    try {
+      return JSON.parse(decodeURIComponent(consentCookie))
+    } catch (err) {
+      return undefined
+    }
+  }
+}
+
+function hasNecessaryConsent(req) {
+  const consent = parseConsentCookie(req.cookies && req.cookies.cc_cookie)
+  return !!(consent && Array.isArray(consent.categories) && consent.categories.includes('necessary'))
+}
+
 // must be called with 'this' of the server
 async function setCookieUser(req, res, next) {
   var cookie
+  console.log(
+    'setCookieUser: req.user',
+    req.user,
+    'req.tempid',
+    req.tempid,
+    'req.cookies.synuser',
+    req.cookies && req.cookies.synuser
+  )
+  if (!hasNecessaryConsent(req)) {
+    res.clearCookie('synuser')
+    next()
+    return
+  }
 
   if (req.user) {
     cookie = { email: req.user.email, id: req.user._id, tempid: req.tempid } // the temp id is passed in the req from the temp-id route
