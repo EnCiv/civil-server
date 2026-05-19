@@ -311,30 +311,32 @@ The last three junctions ensure a single module instance for each package, preve
 
 ---
 
-### Phase 10 — `express` v4 → v5 _(Optional — Evaluate after Phase 9)_
+### Phase 10 — `express` v4 → v5 ✅ DONE
 
-Express 5 became stable in 2024. The main benefit for this codebase is native async error propagation — the `try/catch` wrappers in routes like `sign-in.js` and `sign-up.js` become unnecessary.
+**Completed May 2026. Upgraded to Express 5.2.1.**
 
-**Breaking changes to address:**
+**Changes:**
 
-1. **`req.query` values are always strings** (already true in v4 with default parser).
-2. **`res.locals.error`** — No change.
-3. **Route path syntax** — RegExp routes changed. Review any regex-based routes.
-4. **`next(err)` in async routes** — In Express 5, if an async route function throws, Express automatically calls `next(err)`. The existing try/catch wrappers still work but are now optional.
-5. **`body-parser`** — Can be removed; use `express.json()` and `express.urlencoded()` directly. The `the-civil-server.js` already imports `bodyParser`; switch to:
+1. `npm install express@^5` — upgraded from v4.17.1.
+2. `npm uninstall body-parser` — removed from `dependencies`; body parsing is now provided by Express built-ins.
+3. **`app/server/the-civil-server.js`:** Removed `import bodyParser from 'body-parser'`; replaced:
    ```js
+   // Before
+   this.app.use(bodyParser.urlencoded({ extended: true }), bodyParser.json(), bodyParser.text())
+   // After
    this.app.use(express.urlencoded({ extended: true }), express.json(), express.text())
    ```
+4. **Route path syntax** — Express 5 uses `path-to-regexp` v8 which requires named wildcards. `/*` is invalid; must use `/{*name}`. Fixed in `app/routes/get-iota.js`: `'/*'` → `'/{*path}'`, and the param access changed from `req.params[0]` (a string) to `req.params.path` (an **array** of path segments in Express 5) — joined with `Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || ''`. No other wildcard routes exist.
+5. **Existing try/catch wrappers** in routes (sign-in, sign-up) left in place — they still work in Express 5 and removing them is optional.
+6. **`app/routes/sign-up.js`:** Exported `signUp` function so it can be imported in tests (matching the pattern in `sign-in.js`).
 
-**Tests to add** (`app/routes/__tests__/sign-up.js` — new file):
+**Tests added** (`app/routes/__tests__/sign-up.js`):
+- 400 if email is missing
+- 400 if password is missing
+- Calls `next()` with `req.user` set on successful signup
+- 401 if email is already in use (duplicate key)
 
-```js
-// Using supertest, mount sign-up route on an express 5 app
-// Verify: missing email → 400
-// Verify: missing password → 400
-// Verify: duplicate email → 401
-// Verify: successful signup → sets cookie and returns user ID
-```
+**Verify:** `npm test` — 12 suites, 57 tests pass.
 
 ---
 
@@ -419,7 +421,7 @@ The table below maps each phase to tests that should be written **before and aft
 | 8     | (per superagent call site)                            | fetch mock; correct URL/body/error handling   |
 | 9     | `components/__tests__/app.test.js` ✅                 | React 19 render; HelmetProvider wrapping      |
 | 9     | `server/routes/__tests__/server-react-render.test.js` | SSR HTML; helmet tags; JSS styles             |
-| 10    | `routes/__tests__/sign-up.js`                         | All sign-up branch outcomes via supertest     |
+| 10    | `routes/__tests__/sign-up.js` ✅                       | All sign-up branch outcomes; 400/401/next()   |
 | 11    | `server/__tests__/logger-setup.js`                    | Logger init; no-throw on log calls            |
 
 ---
@@ -454,7 +456,7 @@ main
  └── phase/7-babel-transform-rename ✅ done
  └── phase/8-superagent-removal     ✅ done
  └── phase/9-react-19               ✅ done (coordinate with civil-client)
- └── phase/10-express-5             ← optional; may skip if cost/benefit is low
+ └── phase/10-express-5             ✅ done
  └── phase/11-log4js-assessment
  └── phase/12-storybook-v10         ✅ done (in civil-client repo)
 ```
