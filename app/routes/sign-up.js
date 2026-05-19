@@ -3,7 +3,7 @@
 import User from '../models/user'
 import sendUserId from '../server/util/send-user-id'
 
-function signUp(req, res, next) {
+export function signUp(req, res, next) {
   try {
     let { password, ..._body } = req.body
     let { email } = req.body
