@@ -2,7 +2,12 @@
 // brevo-transactional.js is a thin re-export module; these tests confirm that
 // each Brevo* name is the exact same function reference as its Sib* counterpart.
 // Live API behaviour is tested in send-in-blue-transactional.js.
-import { expect, test, describe } from '@jest/globals'
+import { expect, test, describe, jest } from '@jest/globals'
+
+// global.logger must be set before requiring modules that use it at load time
+global.logger = { ...console }
+global.logger.error = jest.fn((...args) => args)
+global.logger.warn = jest.fn((...args) => args)
 
 const { BrevoGetTemplateId, BrevoDeleteSmtpTemplate, BrevoSendTransacEmail } = require('../brevo-transactional')
 const { SibGetTemplateId, SibDeleteSmtpTemplate, SibSendTransacEmail } = require('../send-in-blue-transactional')
