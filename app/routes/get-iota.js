@@ -8,7 +8,7 @@ import Iota from '../models/iota'
 
 async function getIota(req, res, next) {
   try {
-    let path = req.params[0]
+    let path = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || ''
     if (path.startsWith('country:us') && path[path.length - 1] === '!') path = path.substring(0, path.length - 1) // 2020Feb17: The Ballotpedia emails had a ! at the end of the link. This is a correction for that.  This should be removed after Nov 2020 elections - if not before
     const iota = await Iota.findOne({ path: '/' + path }).catch(err => {
       console.error('getIota.findOne caught error', err, 'skipping')
@@ -60,5 +60,5 @@ function getBrowserConfig(req, res, next) {
 
 export default function route() {
   const serverReactRenderApp = (...args) => serverReactRender(this.App, ...args)
-  this.app.get('/*', this.setUserCookie, getBrowserConfig, getIota, cacheControl, serverReactRenderApp)
+  this.app.get('/{*path}', this.setUserCookie, getBrowserConfig, getIota, cacheControl, serverReactRenderApp)
 }
