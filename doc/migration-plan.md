@@ -246,107 +246,68 @@ Also evaluate:
 **civil-client usage:** civil-client may use superagent for browser-side API calls; that is a separate concern scoped to the civil-client repo and does not affect civil-server.
 
 **Changes:**
+
 1. `npm uninstall superagent` — removed from `dependencies` and `node_modules`.
 2. No application code changes required.
 
 ---
 
-### Phase 9 — React 16 → React 19 _(Coordinate with civil-client)_
+### Phase 9 — React 16 → React 19 _(Coordinate with civil-client)_ ✅ DONE
 
-**This is the largest and highest-risk phase. It must be planned as a coordinated release across civil-server and civil-client.**
+**Completed May 2026. Both repos updated to React 19.2.6.**
 
-#### Sub-phase 9a — Remove `react-hot-loader`
+#### Sub-phase 9a — Remove `react-hot-loader` ✅
 
-`react-hot-loader` is unmaintained and incompatible with React 18+.
+- `app/components/app.jsx`: Removed `import { hot } from 'react-hot-loader'` and `hot(module)(App)` wrapper. `App` exported directly.
+- `webpack-dev.config.js`: Removed `'webpack/hot/only-dev-server'` entry; webpack 5 built-in HMR is sufficient.
+- civil-client: `clientMain` updated to use `ReactDOM.createRoot()`.
 
-**Changes in civil-server:**
-
-- `app/components/app.jsx`: Remove `import { hot } from 'react-hot-loader'` and the `hot(module)(App)` wrapper. Export `App` directly.
-- `app/client/main-app.js`: No change required (uses `civil-client`'s `clientMain`).
-- `webpack-dev.config.js`: The `entry.only-dev-server` `'webpack/hot/only-dev-server'` entry can be removed. Webpack 5's built-in `hot: true` HMR is sufficient.
-
-**Changes in civil-client:**
-
-- Same pattern: remove `react-hot-loader` usage from any component that wraps with `hot(module)`.
-- The `clientMain` function in civil-client likely initializes the React app; update it to use `ReactDOM.createRoot()`.
-
-#### Sub-phase 9b — Upgrade React packages
+#### Sub-phase 9b — Upgrade React packages ✅
 
 ```
-npm install react@^19 react-dom@^19
+npm install react@^19 react-dom@^19   # in both repos
 ```
 
-**Breaking changes to address:**
+**Breaking changes addressed:**
 
-1. **`ReactDOM.render()` removed** — Must use `ReactDOM.createRoot()`:
+1. **`ReactDOM.render()` removed** — civil-client's `clientMain` updated to `ReactDOM.createRoot().render()`.
 
-   ```js
-   // Before (React 16)
-   ReactDOM.render(<App />, document.getElementById('root'))
-   // After (React 19)
-   const root = ReactDOM.createRoot(document.getElementById('root'))
-   root.render(<App />)
-   ```
+2. **`react-helmet` → `react-helmet-async` v3** — Replaced in both `app.jsx` and `server-react-render.jsx`. **Important React 19 caveat:** `react-helmet-async` v3 with React 19 does **not** populate `helmetContext.helmet` during SSR — React 19 handles `<title>`, `<meta>`, and `<link>` hoisting natively. The `server-react-render.jsx` HTML template was rewritten to use static head tags; all `helmet.xxx.toString()` calls were removed. `<HelmetProvider>` still wraps the render tree (no `context` prop needed).
 
-   This change is in civil-client's `clientMain`. Update civil-client first.
+3. **JSS class name hydration mismatch** — `react-jss` generates class names with an instance ID (e.g. `authFormWrapper-0-2-1` server vs `authFormWrapper-1-2-1` client). Fixed by:
+   - A custom `createStableGenerateId` in `server-react-render.jsx` that omits the instance counter.
+   - Wrapping the client render tree in `<JssProvider generateId={...}>` with a matching module-level counter in `app/client/main-app.js`.
+   - On Windows dev systems, junctioning civil-client's `react-jss` → civil-server's copy so both share one module instance (see Windows dev setup below).
 
-2. **`renderToString` (server-side)** — Still works in React 19 but the output may differ slightly (no `data-reactroot` attribute). The `server-react-render.jsx` file uses `renderToString` from `react-dom/server`; verify SSR hydration still works.
+4. **`serverReactRender.bind(this.App)` bug** — In `the-civil-server.js`, the `notFound()` and `error()` methods were incorrectly binding `this.App` as the `this` context. Fixed to `serverReactRender.bind(null, this.App)` so `App` arrives as the first positional argument.
 
-3. **Automatic JSX transform** — With `@babel/preset-react` `{ runtime: 'automatic' }`, `import React from 'react'` is no longer needed in every JSX file. This is opt-in and can be added later; keep explicit imports for now to avoid a mass-edit.
+5. **`optimization.nodeEnv: false`** — Added to `webpack-dev.config.js` to prevent webpack from replacing `process.env.NODE_ENV` with a static string at bundle time, which was compiling the runtime check in `main.js` to `if (false) {}`.
 
-4. **Strict Mode** — React 19 in StrictMode mounts/unmounts/remounts components in development. Effects and subscriptions must be cleanup-safe. Review any socket.io connection setup in components.
+6. **`react-jss`** — v10.9.0 confirmed compatible with React 19.
 
-5. **`react-helmet`** — Has concurrent-mode issues in React 18+. Replace with `react-helmet-async`:
+#### Sub-phase 9c — Replace Enzyme with @testing-library/react ✅
 
-   ```
-   npm uninstall react-helmet && npm install react-helmet-async
-   ```
+1. Removed `enzyme`, `enzyme-adapter-react-16`, `jest-enzyme`.
+2. Added `@testing-library/react`, `@testing-library/jest-dom`, and `@testing-library/dom` (peer dep) to `optionalDependencies`.
+3. Updated `jest-test-setup.js`: removed Enzyme configure; imports `@testing-library/jest-dom`.
+4. Updated `jest.config.js`: removed `jest-enzyme` from `setupFilesAfterEnv`.
 
-   API is nearly identical; wrap the app in `<HelmetProvider>`. This affects both `server-react-render.jsx` and `app.jsx`.
+**Tests added:**
 
-   In `server-react-render.jsx`:
+- `app/components/__tests__/app.test.js` — renders App with `@testing-library/react`; verifies basic render and HelmetProvider wrapping.
 
-   ```jsx
-   // Before: const helmet = Helmet.renderStatic()
-   // After: const { helmet } = helmetContext; (from HelmetProvider context)
-   ```
+#### Windows dev setup — npm-link civil-client ✅
 
-6. **`react-jss`** — Verify v10.9.0 is compatible with React 19. JSS is generally stable but run tests.
+On Windows, standard `npm link` uses symlinks that Node.js does not follow correctly. A script `link-civil-client.js` (run via `npm run link-civil-client`) creates four Windows junction points:
 
-#### Sub-phase 9c — Replace Enzyme with @testing-library/react
+- `civil-server-update/node_modules/civil-client` → `civil-client/`
+- `civil-client/node_modules/react` → `civil-server-update/node_modules/react`
+- `civil-client/node_modules/react-dom` → `civil-server-update/node_modules/react-dom`
+- `civil-client/node_modules/react-jss` → `civil-server-update/node_modules/react-jss`
 
-`enzyme-adapter-react-16` does not support React 18+. The `jest-test-setup.js` currently configures Enzyme.
+The last three junctions ensure a single module instance for each package, preventing "invalid hook call" errors and JSS class name mismatches.
 
-**Steps:**
-
-1. `npm uninstall enzyme enzyme-adapter-react-16 jest-enzyme`
-2. `npm install --save-optional @testing-library/react @testing-library/jest-dom`
-3. Update `jest-test-setup.js`: remove Enzyme configure; add `@testing-library/jest-dom` matchers.
-4. Update `jest.config.js`: remove `jest-enzyme` from `setupFilesAfterEnv`.
-
-**Tests to add** for React migration (new files):
-
-_`app/components/__tests__/app.test.jsx`:_
-
-```js
-// Using @testing-library/react, render the App component
-// Verify: renders without crashing with no props
-// Verify: renders WebComponents when iota prop is provided
-// Verify: renders "Nothing Here" when no iota
-// Verify: ErrorBoundary catches a component error and doesn't crash the page
-```
-
-_`app/server/routes/__tests__/server-react-render.test.js`:_
-
-```js
-// Unit test the serverReactRender function (mock req/res)
-// Verify: returns HTML string containing expected structure
-// Verify: helmet tags are present in the rendered output
-// Verify: user cookie is correctly parsed and passed as props
-// Verify: JSS styles are injected into the response
-```
-
-**Verify:** `npm test`; manual SSR test by loading a page in the browser; verify no hydration warnings in the console.
+**Verify:** `npm test` passes; `/join` SSR renders with no hydration warnings; `npm run link-civil-client` creates all four junctions cleanly.
 
 ---
 
@@ -397,17 +358,50 @@ The `log4js` dependency points to a custom GitHub fork (`ddfridley/log4js-node#o
 
 ---
 
-### Phase 12 — civil-client: Storybook v6 → v8
+### Phase 12 — civil-client: Storybook v6 → v10 ✅ DONE
 
-This phase is scoped entirely to the civil-client repo. Storybook 8 has a completely different config directory format (`.storybook/`) and the webpack5 builder is now the default.
+**Completed May 2026. Storybook upgraded to v10.3.6.**
 
-**Steps in civil-client:**
+**Packages updated in civil-client `optionalDependencies`:**
 
-1. Run `npx storybook@latest upgrade` — this runs the automated migration codemod.
-2. Update `.storybook/main.js` format as prompted.
-3. Remove `@storybook/builder-webpack5` and `@storybook/manager-webpack5` (now built in).
+```
+storybook                    ^6 → ^10.0.0
+@storybook/react-webpack5    ^6 → ^10.0.0
+@storybook/addon-links       ^6 → ^10.0.0
+```
 
-**Verify:** `npm run storybook` in civil-client launches Storybook without errors.
+**Packages removed** (now bundled into the core `storybook` package):
+
+```
+@storybook/addon-essentials
+@storybook/test
+```
+
+**Polyfills added** to `optionalDependencies` for webpack5 browser build:
+
+```
+path-browserify       ^1.0.1
+constants-browserify  ^1.0.0
+process               ^0.11.10
+util                  ^0.12.5
+```
+
+**`.storybook/main.js` changes:**
+
+- Removed `@storybook/addon-essentials` from addons (it's now included in core).
+- Added `webpackFinal` with `resolve.fallback` entries for all Node.js built-in polyfills and a `babel-loader` rule for JSX.
+
+**Story file fixes** (all 4 story files):
+
+- `import { React, useState } from 'react'` → `import React, { useState } from 'react'` — React is a default export, not a named export.
+
+**Auth route mocking:**
+
+- Created `stories/mocks/auth-routes-middleware.js` — exports `authRoutesMiddleware(router)`, which intercepts POST `/sign/in`, `/sign/up`, and `/tempid` with mock responses. Designed to work with both Express-enhanced responses and the raw `http.ServerResponse` that Storybook 10's dev server passes to middleware (i.e. uses `res.statusCode`/`res.setHeader()`/`res.end()` rather than `res.json()`). Body is read via async iteration of the request stream rather than `express.json()` middleware.
+- `.storybook/middleware.js` delegates to `authRoutesMiddleware`.
+- Mock credentials: email `success@email.com` / password `password` → 200 success response.
+
+**Verify:** `npm run storybook` in civil-client; all 4 story files load without React errors; auth form actions (sign-in, sign-up, skip) return the expected mock responses.
 
 ---
 
@@ -415,17 +409,18 @@ This phase is scoped entirely to the civil-client repo. Storybook 8 has a comple
 
 The table below maps each phase to tests that should be written **before and after** the migration change to catch regressions.
 
-| Phase | New Test File(s)                                       | Key Assertions                                |
-| ----- | ------------------------------------------------------ | --------------------------------------------- |
-| 2     | `routes/__tests__/sign-in-rate-limit.js`               | 429 after limit; correct handler option       |
-| 3     | `models/__tests__/user.js` (extend)                    | joi v17 email validation; error shapes        |
-| 5     | `routes/__tests__/doc-mddoc.js`                        | Markdown HTML output; 404 for missing doc     |
-| 6     | `lib/__tests__/send-in-blue-transactional.js` (extend) | Mock Brevo SDK; graceful missing-key handling |
-| 8     | (per superagent call site)                             | fetch mock; correct URL/body/error handling   |
-| 9     | `components/__tests__/app.test.jsx`                    | React 19 render; ErrorBoundary; iota prop     |
-| 9     | `server/routes/__tests__/server-react-render.test.js`  | SSR HTML; helmet tags; JSS styles             |
-| 10    | `routes/__tests__/sign-up.js`                          | All sign-up branch outcomes via supertest     |
-| 11    | `server/__tests__/logger-setup.js`                     | Logger init; no-throw on log calls            |
+| Phase | New Test File(s)                                      | Key Assertions                                |
+| ----- | ----------------------------------------------------- | --------------------------------------------- |
+| 2     | `routes/__tests__/sign-in-rate-limit.js` ✅           | 429 after limit; correct handler option       |
+| 3     | `models/__tests__/user.js` (extend)                   | joi v17 email validation; error shapes        |
+| 5     | `routes/__tests__/doc-mddoc.js` ✅                    | Markdown HTML output; 404 for missing doc     |
+| 6     | `lib/__tests__/send-in-blue-transactional.js` ✅      | Mock Brevo SDK; graceful missing-key handling |
+| 6     | `lib/__tests__/brevo-transactional.js` ✅             | Brevo* aliases are same function refs as Sib* |
+| 8     | (per superagent call site)                            | fetch mock; correct URL/body/error handling   |
+| 9     | `components/__tests__/app.test.js` ✅                 | React 19 render; HelmetProvider wrapping      |
+| 9     | `server/routes/__tests__/server-react-render.test.js` | SSR HTML; helmet tags; JSS styles             |
+| 10    | `routes/__tests__/sign-up.js`                         | All sign-up branch outcomes via supertest     |
+| 11    | `server/__tests__/logger-setup.js`                    | Logger init; no-throw on log calls            |
 
 ---
 
@@ -450,18 +445,18 @@ Before releasing any phase that changes the exported API, publish a pre-release 
 
 ```
 main
- └── phase/1-node20                 ← one PR per phase
- └── phase/2-low-risk-deps
- └── phase/3-joi-v17
- └── phase/4-cloudinary-v2
- └── phase/5-marked-v12
- └── phase/6-brevo-sdk
- └── phase/7-babel-transform-rename
- └── phase/8-superagent-removal
- └── phase/9-react-19              ← coordinate with civil-client branch
- └── phase/10-express-5            ← optional; may skip if cost/benefit is low
+ └── phase/1-node20                 ✅ done
+ └── phase/2-low-risk-deps          ✅ done
+ └── phase/3-joi-v17                ✅ done
+ └── phase/4-cloudinary-v2          ✅ done (removed unused package)
+ └── phase/5-marked-v12             ✅ done
+ └── phase/6-brevo-sdk              ✅ done
+ └── phase/7-babel-transform-rename ✅ done
+ └── phase/8-superagent-removal     ✅ done
+ └── phase/9-react-19               ✅ done (coordinate with civil-client)
+ └── phase/10-express-5             ← optional; may skip if cost/benefit is low
  └── phase/11-log4js-assessment
- └── phase/12-storybook-v8         ← in civil-client repo
+ └── phase/12-storybook-v10         ✅ done (in civil-client repo)
 ```
 
 Each branch should:
