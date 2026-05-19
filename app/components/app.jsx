@@ -1,25 +1,21 @@
 'use strict'
 
 import React from 'react'
-import { hot } from 'react-hot-loader'
 import WebComponents from '../web-components'
 import Footer from './footer'
 import { ErrorBoundary } from 'civil-client'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 
-const DynamicFontSizeHelmet =
-  typeof window === 'undefined'
-    ? () => (
-        <Helmet
-          script={[
-            {
-              type: 'text/javascript',
-              innerHTML: `function setFontSize(){document.getElementsByTagName("html")[0].style.fontSize=Math.round(Math.min(window.innerWidth,window.innerHeight))/100*(15/(1080/100))+'px'}; window.onresize=setFontSize; setFontSize();`,
-            },
-          ]}
-        />
-      )
-    : () => null
+const DynamicFontSizeHelmet = () => (
+  <Helmet
+    script={[
+      {
+        type: 'text/javascript',
+        innerHTML: `function setFontSize(){document.getElementsByTagName("html")[0].style.fontSize=Math.round(Math.min(window.innerWidth,window.innerHeight))/100*(15/(1080/100))+'px'}; window.onresize=setFontSize; setFontSize();`,
+      },
+    ]}
+  />
+)
 
 class App extends React.Component {
   render() {
@@ -50,4 +46,4 @@ class App extends React.Component {
   }
 }
 
-export default hot(module)(App)
+export default App
