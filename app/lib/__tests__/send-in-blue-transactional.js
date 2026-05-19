@@ -21,7 +21,7 @@ const maybeNot = !(apiKey && fromEmail) ? describe : describe.skip
 maybeNot('Is Sendinblue environment setup for testing?', () => {
   test('No, go to https://github.com/EnCiv/undebate-ssp/wiki/Send-In-Blue-Transactional for info on setup', () => {
     expect(global.logger.error.mock.results[0].value).toMatchInlineSnapshot(`
-      Array [
+      [
         "env ",
         "BREVO_API_KEY (or SENDINBLUE_API_KEY)",
         "not set. email sending disabled.",
