@@ -27,6 +27,11 @@ module.exports = {
   },
   resolve: {
     extensions: ['*', '.js', '.jsx'],
+    alias: {
+      // When civil-client is npm-linked, ensure only one copy of React is used
+      react: path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+    },
     fallback: {
       fs: false, // logger wants to require fs though it's not needed on the browser
       path: require.resolve('path-browserify'),
@@ -37,6 +42,11 @@ module.exports = {
       buffer: require.resolve('buffer'),
       assert: require.resolve('assert/'),
     },
+  },
+  optimization: {
+    // Prevent webpack from replacing process.env.NODE_ENV at build time so
+    // runtime code in main.js can set/read it dynamically on the browser.
+    nodeEnv: false,
   },
   devServer: {
     allowedHosts: 'all', // not recomended but could be 'auto' but we want to allow devices on the LAN - this is only for development
