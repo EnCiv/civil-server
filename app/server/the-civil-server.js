@@ -2,7 +2,6 @@
 // named the-civil-server.js because web-pack-dev.js needs to IgnorePlugin it, and server.js is used many other times.  Also - IgnorePlugin - contextRegExp not working in combination with resourceRegExp
 import http from 'http'
 import express from 'express'
-import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
 import compression from 'compression'
@@ -182,7 +181,7 @@ class HttpServer {
               )
             )
           )
-        this.app.use(bodyParser.urlencoded({ extended: true }), bodyParser.json(), bodyParser.text())
+        this.app.use(express.urlencoded({ extended: true }), express.json(), express.text())
         this.app.use(cookieParser())
         this.app.use(
           '/assets/',
