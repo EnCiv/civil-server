@@ -146,7 +146,7 @@ class HttpServer {
   }
 
   notFound() {
-    const serverReactRenderApp = serverReactRender.bind(this.App)
+    const serverReactRenderApp = serverReactRender.bind(null, this.App)
     this.app.use((req, res, next) => {
       res.statusCode = 404
       req.notFound = true
@@ -155,7 +155,7 @@ class HttpServer {
   }
 
   error() {
-    const serverReactRenderApp = serverReactRender.bind(this.App)
+    const serverReactRenderApp = serverReactRender.bind(null, this.App)
     this.app.use((error, req, res, next) => {
       logger.error('server caught error', error)
       res.statusCode = 500
