@@ -49,11 +49,11 @@ const BgCyan = '\x1b[46m'
 const BgWhite = '\x1b[47m'
 
 const colorLevel = {
-  error: FgRed + Reverse,
-  warn: FgYellow + Reverse,
-  debug: FgCyan,
-  info: Reset,
-  trace: Reset,
+  error: FgRed + Bright,
+  warn: FgYellow + Bright,
+  debug: FgCyan + Bright,
+  info: Bright,
+  trace: Dim,
 }
 
 // fetch args from command line
@@ -106,18 +106,16 @@ async function main() {
         console.log('\n')
       }
       logs.forEach(log => {
-        console.log(
-          colorLevel[log.level] + log.startTime.toLocaleTimeString(undefined, { timeStyle: 'short' }),
-          log.source,
-          log.level,
-          Reset,
-          JSON.stringify(log.data, null, 2)
-        )
+        const d = log.startTime.toString().split(' ')
+        const ts = d[3] + d[1] + d[2] + ' ' + d[4]
+        const header = colorLevel[log.level] + ts + ' ' + log.source + ' ' + log.level + Reset
+        const body = log.data.map(x => (typeof x === 'object' ? JSON.stringify(x, null, 2) : x)).join(' ')
+        console.log(header, body)
       })
       let date = logs[logs.length - 1].startTime
       const mill = date.getMilliseconds() + 1
       date.setMilliseconds(mill)
-      array[0].$match.startTime = date
+      array[0].$match.startTime = { $gt: date }
     } else {
       process.stdout.write('.')
       pollcount++

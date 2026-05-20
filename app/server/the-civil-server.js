@@ -10,30 +10,39 @@ import setUserCookie from './routes/set-user-cookie'
 import serverReactRender from './routes/server-react-render'
 import fetchHandlers from './util/fetch-handlers'
 import serverEvents from './server-events'
-import log4js from 'log4js'
+import { createLogger } from './util/logger'
+import { createMongoAppender } from './util/mongo-logger'
 import { Mongo } from '@enciv/mongo-collections'
-import mongologger from './util/mongo-logger'
 import path from 'path'
 import App from '../components/app'
 import { mergeWith } from 'lodash'
 
 if (!global.logger) {
-  log4js.configure({
-    appenders: {
-      browserMongoAppender: { type: mongologger, source: 'browser' },
-      err: { type: 'stderr' },
-      nodeMongoAppender: { type: mongologger, source: 'node' },
-    },
-    categories: {
-      browser: { appenders: ['err', 'browserMongoAppender'], level: 'debug' },
-      node: { appenders: ['err', 'nodeMongoAppender'], level: 'debug' },
-      default: { appenders: ['err'], level: 'debug' },
-    },
-  })
+  const nodeMongoAppender = createMongoAppender('node')
+  const browserMongoAppender = createMongoAppender('browser')
+
+  // ANSI codes for stderr formatting (terminals that don't support them just show the text).
+  const _Reset = '\x1b[0m'
+  const _Bright = '\x1b[1m'
+  const _FgRed = '\x1b[31m'
+  const _FgYellow = '\x1b[33m'
+  const _levelColor = { error: _FgRed + _Bright, warn: _FgYellow + _Bright }
+
+  // Write all events to stderr so they appear in server logs / Heroku logstream.
+  function createStderrAppender(source) {
+    return function stderrAppender(event) {
+      const d = event.startTime.toString().split(' ')
+      const ts = d[3] + d[1] + d[2] + ' ' + d[4]
+      const col = _levelColor[event.level] || _Bright
+      const header = `${col}${ts} ${source} ${event.level}${_Reset}`
+      const body = event.data.map(x => (typeof x === 'object' ? JSON.stringify(x, null, 2) : x)).join(' ')
+      process.stderr.write(`${header} ${body}\n`)
+    }
+  }
 
   // bslogger stands for browser socket logger - not BS logger.
-  global.bslogger = log4js.getLogger('browser')
-  global.logger = log4js.getLogger('node')
+  global.bslogger = createLogger([createStderrAppender('browser'), browserMongoAppender])
+  global.logger = createLogger([createStderrAppender('node'), nodeMongoAppender])
 }
 
 class HttpServer {

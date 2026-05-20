@@ -341,23 +341,55 @@ The last three junctions ensure a single module instance for each package, preve
 
 ---
 
-### Phase 11 — `log4js` Custom Fork Assessment
+### Phase 11 — `log4js` Custom Fork → Custom Thin Logger ✅ DONE
 
-The `log4js` dependency points to a custom GitHub fork (`ddfridley/log4js-node#onbrowser`) that adds browser support. This is a long-term technical debt item.
+**Completed May 2026.**
 
-**Options:**
+The `log4js` dependency (custom GitHub fork `ddfridley/log4js-node#onbrowser`) was replaced with a small custom logger and refactored appenders. This eliminates a forked dependency while keeping the full logging pipeline intact.
 
-1. **Keep the fork and update it** to the latest upstream log4js if the fork is diverged.
-2. **Replace with a browser-compatible logger** such as `loglevel`, `pino` (Node) + a browser shim, or a custom thin wrapper around `console` for the browser and a structured logger for Node.
-3. **Evaluate if log4js is actually needed in the browser** — browser logs appear to be sent via socket to the server (`browserMongoAppender`). If this feature is important, keep the fork.
+**New files:**
 
-**Tests to add** (new file: `app/server/__tests__/logger-setup.js`):
+- `app/server/util/logger.js` — `createLogger(appenders[])` factory. Each method (`info/warn/error/debug/trace`) builds a `{ level, startTime, data }` event and calls each appender. An optional leading `Date` arg overrides `startTime` (used by `bslogger` to replay the browser-side timestamp).
+- `app/server/util/jest-socket-api-setup.js` — reusable socket.io test helper (real server+client pair, `window.socket` getter, `EADDRINUSE` retry).
 
-```js
-// Verify logger is initialized (global.logger is defined)
-// Verify bslogger (browser socket logger) is defined
-// Verify a log call does not throw
-```
+**Appenders refactored (log4js shim removed):**
+
+- `app/server/util/mongo-logger.js` — exports `createMongoAppender(source)` plain factory (plus legacy `{appender, configure}` shim for existing tests).
+- `civil-client/app/client/bconsole.js` — exports `createBconsoleAppender()` plain factory.
+- `civil-client/app/client/socketlogger.js` — exports `createSocketloggerAppender()` plain factory.
+- `civil-client/app/client/logger.js` (new) — copy of `createLogger` for browser bundle (civil-server is not in civil-client's node_modules).
+
+**Production wiring (`app/server/the-civil-server.js`):**
+
+- Removed `log4js.configure(...)` block.
+- `global.logger = createLogger([createStderrAppender('node'), nodeMongoAppender])`
+- `global.bslogger = createLogger([createStderrAppender('browser'), browserMongoAppender])`
+- `createStderrAppender(source)` factory: formats `2026May19 18:28:53 node info ...` with bold header, red for error, yellow for warn; objects expanded to multiline JSON.
+
+**Browser wiring (`civil-client/app/client/main.js`):**
+
+- Removed `log4js.configure(...)` block.
+- `window.logger = createLogger([createBconsoleAppender(), createSocketloggerAppender()])`
+
+**log4js removed** from both `civil-server-update` and `civil-client` `dependencies`.
+
+**End-to-end tests added:**
+
+- `app/server/util/__tests__/mongo-logger.js` — server logger→mongo pipeline (level, source, data, timestamp).
+- `app/socket-apis/__tests__/socketlogger.js` — bconsole appender + full browser→socket→bslogger→mongo pipeline (jsdom environment, real socket.io round-trip).
+
+**Supporting infra changes:**
+
+- `.babelrc` → `babel.config.json` so Babel applies to files outside project root (needed to transform civil-client ES modules via node_modules junction).
+- `jest.config.js`: `transformIgnorePatterns` for civil-client, `moduleNameMapper` to force Node.js `ws` over jsdom browser stub.
+- `jest-test-setup.js`: polyfill `TextEncoder`/`TextDecoder` for jsdom environment.
+
+**`app/tools/logwatch.js` fixes and improvements:**
+
+- Fixed polling bug: cursor was set to a raw `Date` after first batch instead of `{ $gt: date }`, so no new records were ever fetched.
+- Added error on missing/empty `db` URI argument (was silently connecting to `localhost:27017`).
+- Added Node 20 DNS fix (mirror of `start.js`) for `mongodb+srv://` URIs.
+- Output format normalized to match server stderr: `2026May19 18:28:53 browser info <body>` with bold header, red error, yellow warn; objects expanded to multiline JSON without outer `[]`.
 
 ---
 

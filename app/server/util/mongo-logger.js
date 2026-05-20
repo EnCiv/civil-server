@@ -1,10 +1,28 @@
 'use strict'
 import Log from '../../models/log'
 
-// write the logging event into the mongo log collection as a document.
-// in this case we are adding source to indicate that this record came from the server - there may be another logger that's adding from a different source
+// Returns an appender function for the custom logger (see logger.js).
+// source: 'node' | 'browser'
+//
+// loggingEvent: { level: string, startTime: Date, data: Array }
+export function createMongoAppender(source) {
+  return function mongoAppender(loggingEvent) {
+    Log.create({
+      startTime: loggingEvent.startTime,
+      source,
+      level: loggingEvent.level,
+      data: loggingEvent.data,
+    })
+  }
+}
+
+// ---------------------------------------------------------------------------
+// log4js compatibility shim (used by the tests in __tests__/mongo-logger.js
+// which still wire up log4js directly to verify the pipeline end-to-end).
+// Keep these so the existing tests don't need to change.
+// ---------------------------------------------------------------------------
 function mongologgerAppender(layout, timezoneOffset, source) {
-  return function(loggingEvent) {
+  return function (loggingEvent) {
     Log.create({
       startTime: loggingEvent.startTime,
       source,
@@ -15,12 +33,9 @@ function mongologgerAppender(layout, timezoneOffset, source) {
 }
 
 function configure(config) {
-  var layout
-  if (config.layout) {
-    layout = layouts.layout(config.layout.type, config.layout)
-  }
-  return mongologgerAppender(layout, config.timezoneOffset, config.source || '')
+  return mongologgerAppender(null, config.timezoneOffset, config.source || '')
 }
 
 export { mongologgerAppender as appender, configure }
-export default { appender: mongologgerAppender, configure: configure }
+export default { appender: mongologgerAppender, configure, createMongoAppender }
+
