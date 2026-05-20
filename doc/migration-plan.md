@@ -473,6 +473,58 @@ Before releasing any phase that changes the exported API, publish a pre-release 
 | 9b    | React 19; `createRoot` in civil-client                                                             | civil-client must be updated in lockstep                                                                    |
 | 9b    | `react-helmet` → `react-helmet-async`; needs `<HelmetProvider>`                                    | Projects wrapping the app need HelmetProvider                                                               |
 | 10    | `body-parser` removed                                                                              | Consuming projects must use `express.json()` themselves if they depend on body-parser being already mounted |
+| 11    | `log4js` removed; `global.logger` / `global.bslogger` / `window.logger` now use custom thin logger | **See detailed notes below.**                                                                               |
+
+### Phase 11 — Consuming Project Migration Notes
+
+#### Logger globals (`global.logger`, `global.bslogger`)
+
+The API is identical: `logger.info(...)`, `logger.warn(...)`, `logger.error(...)`, `logger.debug(...)`, `logger.trace(...)`. No call-site changes needed.
+
+If a consuming project calls `log4js.configure(...)` directly (e.g. to add a custom appender), that must be replaced. Instead, pass additional appender functions to `createLogger`:
+
+```js
+import { createLogger } from 'civil-server/app/server/util/logger'
+const myLogger = createLogger([myAppender1, myAppender2])
+global.logger = myLogger
+```
+
+#### Browser logger (`window.logger`)
+
+Same API. If the consuming project configures `window.logger` via `log4js.configure`, replace with:
+
+```js
+import { createLogger } from 'civil-client/app/client/logger'
+import { createBconsoleAppender } from 'civil-client/app/client/bconsole'
+import { createSocketloggerAppender } from 'civil-client/app/client/socketlogger'
+window.logger = createLogger([createBconsoleAppender(), createSocketloggerAppender()])
+```
+
+#### Socket-API tests (`jest-socket-api-setup`)
+
+Consuming projects that test socket APIs should import the shared helper from civil-server rather than maintaining their own copy:
+
+```js
+import jestSocketApiSetup, { jestSocketApiTeardown } from 'civil-server/app/server/util/jest-socket-api-setup'
+```
+
+The helper spins up a real in-process socket.io server+client pair. `window.socket` is set as a configurable getter so tests can observe emitted events. Ports start at 3100 and auto-increment on `EADDRINUSE` so parallel test suites don't collide.
+
+Test files that use this helper need `@jest-environment jsdom` and the following in `jest.config.js`:
+
+```js
+// Force Node.js ws package in jsdom environment (jsdom exposes a browser WebSocket stub)
+moduleNameMapper: { '^ws$': '<rootDir>/node_modules/ws/index.js' }
+```
+
+And in `jest-test-setup.js`:
+
+```js
+// mongodb-connection-string-url requires TextEncoder at module load time
+import { TextEncoder, TextDecoder } from 'util'
+if (!global.TextEncoder) global.TextEncoder = TextEncoder
+if (!global.TextDecoder) global.TextDecoder = TextDecoder
+```
 
 ---
 
@@ -490,7 +542,7 @@ main
  └── phase/8-superagent-removal     ✅ done
  └── phase/9-react-19               ✅ done (coordinate with civil-client)
  └── phase/10-express-5             ✅ done
- └── phase/11-log4js-assessment
+ └── phase/11-log4js-assessment     ✅ done
  └── phase/12-storybook-v10         ✅ done (in civil-client repo)
 ```
 
