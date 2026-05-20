@@ -331,6 +331,7 @@ The last three junctions ensure a single module instance for each package, preve
 6. **`app/routes/sign-up.js`:** Exported `signUp` function so it can be imported in tests (matching the pattern in `sign-in.js`).
 
 **Tests added** (`app/routes/__tests__/sign-up.js`):
+
 - 400 if email is missing
 - 400 if password is missing
 - Calls `next()` with `req.user` set on successful signup
@@ -421,7 +422,7 @@ The table below maps each phase to tests that should be written **before and aft
 | 8     | (per superagent call site)                            | fetch mock; correct URL/body/error handling   |
 | 9     | `components/__tests__/app.test.js` ✅                 | React 19 render; HelmetProvider wrapping      |
 | 9     | `server/routes/__tests__/server-react-render.test.js` | SSR HTML; helmet tags; JSS styles             |
-| 10    | `routes/__tests__/sign-up.js` ✅                       | All sign-up branch outcomes; 400/401/next()   |
+| 10    | `routes/__tests__/sign-up.js` ✅                      | All sign-up branch outcomes; 400/401/next()   |
 | 11    | `server/__tests__/logger-setup.js`                    | Logger init; no-throw on log calls            |
 
 ---
