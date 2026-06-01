@@ -22,16 +22,16 @@ function parseConsentCookie(consentCookie) {
   }
 }
 
-function hasAcceptedConsent(req) {
+function hasRequiredCookieConsent(req) {
   const consent = parseConsentCookie(req.cookies && req.cookies.cc_cookie)
-  return !!(consent && Array.isArray(consent.categories) && consent.categories.includes('analytics'))
+  return !!(consent && Array.isArray(consent.categories) && consent.categories.includes('necessary'))
 }
 
 // must be called with 'this' of the server
 async function setCookieUser(req, res, next) {
   var cookie
 
-  if (!hasAcceptedConsent(req)) {
+  if (!hasRequiredCookieConsent(req)) {
     res.clearCookie('synuser')
     next()
     return

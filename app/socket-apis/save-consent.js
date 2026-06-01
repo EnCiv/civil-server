@@ -2,7 +2,7 @@
 
 import Consent from '../models/consent'
 
-async function saveConsent(synuser, formattedConsentData, cb = () => {}) {
+async function saveConsent(formattedConsentData, cb = () => {}) {
   /* 
   Formatted consent data is a list of objects with these fields:
     [
@@ -16,10 +16,9 @@ async function saveConsent(synuser, formattedConsentData, cb = () => {}) {
   // Check if the consent already exists
   let whoData = {}
   let created = false
+  const socketUserId = this?.synuser?.id
 
-  if (synuser && synuser.id) {
-    whoData[`userId`] = synuser.id
-  }
+  if (socketUserId) whoData.userId = socketUserId
 
   if (this?.client?.conn?.remoteAddress) {
     whoData['ipAddress'] = this.client.conn.remoteAddress

@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react'
+// github.com/EnCiv/civil-server/issues/61
+
+https: import React, { useEffect, useState, useRef } from 'react'
 import Helmet from 'react-helmet'
 import * as CookieConsent from 'vanilla-cookieconsent'
 
@@ -36,7 +38,6 @@ function stopAnalytics() {
 }
 
 function EncivCookies(props) {
-  const { user } = props
   const [cookie, setCookie] = useState()
   const hasMounted = useRef(false)
 
@@ -46,9 +47,6 @@ function EncivCookies(props) {
       hasMounted.current = true
       return
     }
-
-    const userId = user?.id || user?.tempId
-    const synuser = { synuser: { id: userId } }
 
     const consent = CookieConsent.getCookie() || {}
     const categories = Array.isArray(consent.categories) ? consent.categories : []
@@ -66,7 +64,7 @@ function EncivCookies(props) {
     }
 
     // Call the server to save consent to database
-    window.socket.emit('save-consent', synuser, formattedConsentData, () => {
+    window.socket.emit('save-consent', formattedConsentData, () => {
       console.log('Consent data successfully saved.')
     })
 

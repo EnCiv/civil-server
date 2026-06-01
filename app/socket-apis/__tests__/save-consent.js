@@ -4,7 +4,7 @@ const { Mongo } = require('@enciv/mongo-collections')
 import { MongoMemoryServer } from 'mongodb-memory-server'
 
 const USER_ID = '6667d5a33da5d19ddc304a6b'
-const synuser = { synuser: { id: USER_ID } }
+const socketContext = { synuser: { id: USER_ID } }
 
 import Consent from '../../models/consent'
 
@@ -28,7 +28,7 @@ afterAll(async () => {
 test('Test new consent doc is made when who query has no match.', async () => {
   const cb = jest.fn()
   await saveConsent.call(
-    synuser,
+    socketContext,
     [
       {
         category: 'ConsentOption1',
@@ -47,7 +47,7 @@ test('Test new consent doc is update when who query has a match.', async () => {
   // Was already created from the last test
   const cb = jest.fn()
   await saveConsent.call(
-    synuser,
+    socketContext,
     [
       {
         category: 'ConsentOption2',
@@ -98,4 +98,35 @@ test('Test failure when neither user or ip address identifier is usable.', async
 
   expect(cb).toHaveBeenCalledTimes(1)
   expect(cb).toHaveBeenCalledWith(undefined)
+})
+
+test('Test consent is tied to authenticated socket user id.', async () => {
+  const cb = jest.fn()
+  const socketUserId = '6667d5a33da5d19ddc304a6c'
+  const socketUser = { synuser: { id: socketUserId } }
+
+  await saveConsent.call(
+    socketUser,
+    [
+      {
+        category: 'ConsentOption1',
+        isGranted: true,
+        terms: 'By consenting, you agree to consent to this agreement.',
+      },
+    ],
+    cb
+  )
+
+  expect(cb).toHaveBeenCalledTimes(1)
+  expect(cb).toHaveBeenCalledWith({ created: true })
+
+  const consentDoc = await Consent.findOne({ who: { userId: socketUserId } })
+  expect(consentDoc).toMatchObject({
+    who: { userId: socketUserId },
+    what: {
+      ConsentOption1: {
+        isGranted: true,
+      },
+    },
+  })
 })
