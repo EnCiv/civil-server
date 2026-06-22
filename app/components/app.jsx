@@ -36,6 +36,7 @@ function App(props) {
             <title>{iota?.subject || 'Candiate Conversations'}</title>
           </Helmet>
           <DynamicFontSizeHelmet />
+          {/* if an iota is not found, it's an unusual error. do not further complicate the user experience by asking the user for cookie consent. */}
           <EncivCookies user={newProps.user} />
           <WebComponents key="web-component" webComponent={iota.webComponent} {...newProps} />
           <Footer key="footer" />

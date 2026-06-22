@@ -119,7 +119,13 @@ class Consent extends Collection {
   }
 
   static async updateConsent(whoData, newConsent) {
-    let doc = await this.findOne({ who: whoData })
+    const prefixedData = Object.fromEntries(Object.entries(whoData).map(([key, value]) => [`who.${key}`, value]))
+    let doc = await this.findOne(prefixedData)
+
+    if (!doc) {
+      logger.error('Consent.updateConsent: no document found for', whoData)
+      return undefined
+    }
 
     for (const obj of newConsent) {
       const { category, isGranted, terms, services } = obj

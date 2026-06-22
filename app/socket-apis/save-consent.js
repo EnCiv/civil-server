@@ -15,7 +15,6 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
   */
   // Check if the consent already exists
   let whoData = {}
-  let created = false
   const socketUserId = this?.synuser?.id
 
   if (socketUserId) whoData.userId = socketUserId
@@ -31,15 +30,21 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
 
   let consentDoc = await Consent.findOne(prefixedData)
 
-  // Create the doc is it doesn't already exist
   if (!consentDoc) {
-    await Consent.create({ who: whoData, what: {} })
-    created = true
+    // No existing doc — build the full document in memory and create it in one operation
+    let newDoc = { who: whoData, what: {} }
+    for (const { category, isGranted, terms, services } of formattedConsentData) {
+      newDoc = Consent.modifySingleConsent(newDoc, category, isGranted, terms, services)
+    }
+    const result = await Consent.create(newDoc)
+    if (!result) return cb(undefined)
+    return cb({ created: true })
   }
 
-  await Consent.updateConsent(whoData, formattedConsentData)
+  const updatedDoc = await Consent.updateConsent(whoData, formattedConsentData)
+  if (!updatedDoc) return cb(undefined)
 
-  return cb({ created: created })
+  return cb({ created: false })
 }
 
 export default saveConsent
