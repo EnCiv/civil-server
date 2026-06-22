@@ -116,7 +116,7 @@ function serverReactRender(App, req, res, next) {
                         return browserEnv
                       })()
                     )})</script>
-                    ${helmet.script.toString()}  
+                    ${helmet.script.toString()}
                 </head>
                 <body style="margin: 0; padding: 0" ${helmet.bodyAttributes.toString()}>
                     <div id="synapp">${body}</div>

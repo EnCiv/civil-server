@@ -43,7 +43,7 @@ test('Test new consent doc is made when who query has no match.', async () => {
   expect(cb).toHaveBeenCalledWith({ created: true })
 })
 
-test('Test new consent doc is update when who query has a match.', async () => {
+test('Test existing consent doc is updated when who query has a match.', async () => {
   // Was already created from the last test
   const cb = jest.fn()
   await saveConsent.call(
