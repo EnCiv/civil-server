@@ -83,13 +83,21 @@ function serverReactRender(App, req, res, next) {
                     <meta name='viewport' content='width=device-width, maximum-scale=1.0, initial-scale=1.0' />
                     <meta charSet="UTF-8"/>
                     ${helmet.meta.toString()}
-                    <link rel='icon' type='image.png' href='/assets/images/favicon-16x16.png' sizes='16x16'/>
+                    <link rel='icon' type='image/png' href='/assets/images/favicon-16x16.png' sizes='16x16'/>
                     <link rel='icon' type='image/png' href='/assets/images/favicon-32x32.png' sizes='32x32'/>
-                    <link rel="apple-touch-icon" sizes="180x180"  href="/assets/images/apple-touch-icon.png" />
-                    <link rel="manifest"  href="/assets/images/site.webmanifest"/>
+                    <link rel="icon" type="image/png" href="/assets/images/android-chrome-192x192.png" sizes="192x192" />
+                    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+                    <link rel="manifest" href="/assets/images/site.webmanifest"/>
                     <link rel="shortcut icon" href="/assets/images/favicon.ico" />
                     ${helmet.link.toString()}
                     <meta name="theme-color" content="#ffffff"/>
+                    <meta name="apple-mobile-web-app-capable" content="yes"/>
+                    <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+                    <meta name="apple-mobile-web-app-title" content="EnCiv"/>
+                    <meta name="mobile-web-app-capable" content="yes"/>
+                    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
+                    <link rel="preconnect" href="https://kit.fontawesome.com"/>
                     <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
                     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
                     <style type="text/css">

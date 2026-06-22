@@ -95,3 +95,5 @@ globalConfig.json
 
 #less history frequently genereated by the bash shell
 .lesshst
+#if someone uses the vi edtior -ef merge commit messages
+.viminfo
