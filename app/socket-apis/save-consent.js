@@ -8,7 +8,7 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
     [
       {
         category: 'OptionName',
-        isGranted: /false,
+        isGranted: false,
         terms: 'Some text..',
       },
     ],

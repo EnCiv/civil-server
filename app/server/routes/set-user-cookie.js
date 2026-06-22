@@ -31,11 +31,7 @@ function hasRequiredCookieConsent(req) {
 async function setCookieUser(req, res, next) {
   var cookie
 
-  if (!hasRequiredCookieConsent(req)) {
-    res.clearCookie('synuser')
-    next()
-    return
-  }
+  // synuser is a strictly necessary session/auth cookie; do not gate it behind cookie-consent
 
   if (req.user) {
     cookie = { email: req.user.email, id: req.user._id, tempid: req.tempid } // the temp id is passed in the req from the temp-id route
