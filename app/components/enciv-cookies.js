@@ -11,6 +11,7 @@ const CConsentStyleHelmet = () => (
 )
 
 function startAnalytics() {
+  // The BrowserEnv component injects ENV selected vars from the server side to the client side.
   if (!window.process.env.GOOGLE_ANALYTICS) return
   if (document.getElementById('googletagmanager')) return
 
@@ -31,10 +32,79 @@ function startAnalytics() {
 
 function stopAnalytics() {
   console.log('Stopping analytics')
+  
+  // Clear Google Analytics cookies for this session
+  ;['_ga', '_gid', '_gat'].forEach(name => {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+  })
+  
   delete window.dataLayer
   delete window.gtag
   const gtmElement = document.getElementById('googletagmanager')
   if (gtmElement) gtmElement.remove()
+  
+  // Full opt-out requires a browser refresh to prevent GA from re-initializing and setting new cookies
+  alert('Analytics has been disabled. Please refresh your browser to fully complete the opt-out.')
+
+// Static consent configuration — independent of component state
+const modalSections = {
+  necessary: {
+    title: 'Strictly Necessary cookies',
+    description: 'These cookies are essential for the proper functioning of the website and cannot be disabled.',
+
+    //this field will generate a toggle linked to the 'necessary' category
+    linkedCategory: 'necessary',
+  },
+  analytics: {
+    title: 'Performance and Analytics',
+    description:
+      'These cookies collect information about how you use our website. All of the data is anonymized and cannot be used to identify you.',
+    linkedCategory: 'analytics',
+  },
+}
+
+// We can extend this by storing in the database
+const services = {
+  necessary: [],
+  analytics: [
+    {
+      label: 'Google Analytics',
+      onAccept: () => {},
+      onReject: () => {},
+    },
+  ],
+}
+
+/* 
+Format the services data lists for each category.
+
+Was a bit hard to find documentation, 
+but this is the object structure for displaying individual services.
+{
+    service1: {
+      label: 'service1',
+      onAccept: Func(),
+      onReject: Func(),  
+    },
+    service2: {...}
+    ...
+}
+*/
+
+const consentCategories = {}
+// Init the services lists
+for (const key of Object.keys(services)) {
+  consentCategories[key] = {
+    services: services[key].reduce((result, service) => {
+      result[service.label] = { ...service }
+      return result
+    }, {}),
+  }
+
+  if (key === 'necessary') {
+    consentCategories[key].readOnly = true
+    consentCategories[key].enabled = true
+  }
 }
 
 function EncivCookies(props) {
@@ -115,67 +185,6 @@ function EncivCookies(props) {
     // Apply existing saved consent on first load for returning users.
     setCookie(CookieConsent.getCookie())
   }, [])
-
-  // The sections that show in the consent modal
-  const modalSections = {
-    necessary: {
-      title: 'Strictly Necessary cookies',
-      description: 'These cookies are essential for the proper functioning of the website and cannot be disabled.',
-
-      //this field will generate a toggle linked to the 'necessary' category
-      linkedCategory: 'necessary',
-    },
-    analytics: {
-      title: 'Performance and Analytics',
-      description:
-        'These cookies collect information about how you use our website. All of the data is anonymized and cannot be used to identify you.',
-      linkedCategory: 'analytics',
-    },
-  }
-
-  // We can extend this by storing in the database
-  const services = {
-    necessary: [],
-    analytics: [
-      {
-        label: 'Google Analytics',
-        onAccept: () => {},
-        onReject: () => {},
-      },
-    ],
-  }
-
-  /* 
-Format the services data lists for each category.
-
-Was a bit hard to find documentation, 
-but this is the object structure for displaying individual services.
-{
-    service1: {
-      label: 'service1',
-      onAccept: Func(),
-      onReject: Func(),  
-    },
-    service2: {...}
-    ...
-}
-*/
-
-  const consentCategories = {}
-  // Init the services lists
-  for (const key of Object.keys(services)) {
-    consentCategories[key] = {
-      services: services[key].reduce((result, service) => {
-        result[service.label] = { ...service }
-        return result
-      }, {}),
-    }
-
-    if (key === 'necessary') {
-      consentCategories[key].readOnly = true
-      consentCategories[key].enabled = true
-    }
-  }
 
   return (
     <div>

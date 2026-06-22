@@ -20,10 +20,10 @@ Consent = {
          ...previous data
         }]
       },
-      OPTION1: {
+      OPTION2: {
         isGranted: false,
         consentDate: DATE2,
-        term: "This is a term you've agreed to."
+        terms: "This is a term you've agreed to."
         history: []
       }
 
