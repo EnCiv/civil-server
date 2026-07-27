@@ -2,13 +2,14 @@
 
 import User from '../models/user'
 import { SibGetTemplateId, SibSendTransacEmail } from '../lib/send-in-blue-transactional'
+import path from 'path'
 
 let templateId
 
 async function sendResetPasswordEmail(host, toAddress, activationKey, activationToken, returnToPath) {
   logger.debug('sending password reset email to ', toAddress)
   if (!templateId) {
-    templateId = await SibGetTemplateId('reset-password')
+    templateId = await SibGetTemplateId(path.resolve(__dirname, '../../assets/email-templates/reset-password.html'))
     if (!templateId) {
       logger.error('reset-password template not found')
       return false

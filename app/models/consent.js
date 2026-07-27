@@ -134,8 +134,8 @@ class Consent extends Collection {
     }
 
     const query = { _id: doc._id }
-    const result = await this.findOneAndUpdate(query, { $set: doc }, { returnDocument: 'after' })
-
+    const { _id, ...docWithoutId } = doc
+    const result = await this.findOneAndUpdate(query, { $set: docWithoutId }, { returnDocument: 'after' })
     return result.value
   }
 }

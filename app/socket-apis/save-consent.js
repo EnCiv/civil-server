@@ -8,7 +8,7 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
     [
       {
         category: 'OptionName',
-        isGranted: /false,
+        isGranted: false,
         terms: 'Some text..',
       },
     ],
@@ -24,8 +24,7 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
   }
 
   // Must have either a user ID or IP address
-  if (Object.keys(whoData).length == 0) return cb(undefined)
-
+  if (Object.keys(whoData).length === 0) return cb(undefined)
   const prefixedData = Object.fromEntries(Object.entries(whoData).map(([key, value]) => [`who.${key}`, value]))
 
   let consentDoc = await Consent.findOne(prefixedData)

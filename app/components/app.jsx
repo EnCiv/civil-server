@@ -2,7 +2,7 @@
 
 'use strict'
 
-import React, { useEffect, useState, useRef } from 'react'
+import React from 'react'
 import { hot } from 'react-hot-loader'
 import WebComponents from '../web-components'
 import Footer from './footer'

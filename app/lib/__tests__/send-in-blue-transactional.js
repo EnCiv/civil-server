@@ -1,5 +1,6 @@
 // https://github.com/EnCiv/undebate-ssp/wiki/Send-In-Blue-Transactional
 import { expect, test, beforeAll, afterAll, jest, describe } from '@jest/globals'
+import path from 'path'
 
 global.logger = { ...console }
 if (process.env.JEST_LOGGER_ERRORS_TO_CONSOLE)
@@ -29,14 +30,14 @@ maybeNot('Is Sendinblue environment setup for testing?', () => {
 })
 maybe('Test the Sendinblue Transactional APIs', () => {
   test('Template does not exist', async () => {
-    const id = await SibGetTemplateId('invalid-template-name')
+    const id = await SibGetTemplateId(path.resolve(__dirname, '../../../assets/email-templates/invalid-template-name.html'))
     expect(id).toBeFalsy()
     expect(global.logger.error.mock.results[0].value[0]).toMatch('SibGetTemplateId caught error')
     expect(global.logger.error.mock.results[0].value[1]).toMatch(/^ENOENT: no such file or directory.+/)
   })
   let id
   test('Template exists or can be created', async () => {
-    id = await SibGetTemplateId('jest-test')
+    id = await SibGetTemplateId(path.resolve(__dirname, '../../../assets/email-templates/jest-test.html'))
     expect(id).toBeGreaterThan(0)
   })
   test('Template can be deleted', async () => {
@@ -44,7 +45,7 @@ maybe('Test the Sendinblue Transactional APIs', () => {
   })
   let newId
   test('Template can be created', async () => {
-    newId = await SibGetTemplateId('jest-test')
+    newId = await SibGetTemplateId(path.resolve(__dirname, '../../../assets/email-templates/jest-test.html'))
     expect(newId).toBeGreaterThan(id)
   })
   test('Can send a test email, check your inbox', async () => {

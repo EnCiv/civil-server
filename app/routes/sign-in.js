@@ -6,7 +6,8 @@ import sendUserId from '../server/util/send-user-id'
 
 const env = process.env.NODE_ENV || 'development'
 
-async function signIn(req, res, next) {
+// made signIn function exportable so it can be imported into jest test files
+export const signIn = async function signIn(req, res, next) {
   try {
     const { password, ..._body } = req.body // don't let the password appear in the logs
     logger.info({ signIn: _body })
@@ -58,20 +59,24 @@ async function signIn(req, res, next) {
 }
 
 function route() {
-  let signInAttemptWindow
-  let signInWindowMessage
-  if (env === 'development') {
-    signInAttemptWindow = 60 * 1000
-    signInWindowMessage = '60 seconds'
+  if (process.env.DISABLE_RATE_LIMIT) {
+    this.app.post('/sign/in', signIn, this.setUserCookie, sendUserId)
   } else {
-    signInAttemptWindow = 24 * 60 * 60 * 1000
-    signInWindowMessage = '24 hours'
+    let signInAttemptWindow
+    let signInWindowMessage
+    if (env === 'development') {
+      signInAttemptWindow = 60 * 1000
+      signInWindowMessage = '60 seconds'
+    } else {
+      signInAttemptWindow = 24 * 60 * 60 * 1000
+      signInWindowMessage = '24 hours'
+    }
+    const apiLimiter = expressRateLimit({
+      windowMs: signInAttemptWindow,
+      max: 5,
+      message: 'Too many attempts logging in, please try again after ' + signInWindowMessage + '.',
+    })
+    this.app.post('/sign/in', apiLimiter, signIn, this.setUserCookie, sendUserId)
   }
-  const apiLimiter = expressRateLimit({
-    windowMs: signInAttemptWindow,
-    max: 2,
-    message: 'Too many attempts logging in, please try again after ' + signInWindowMessage + '.',
-  })
-  this.app.post('/sign/in', apiLimiter, signIn, this.setUserCookie, sendUserId)
 }
 export default route

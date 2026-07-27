@@ -1,7 +1,7 @@
 // github.com/EnCiv/civil-server/issues/61
 
-https: import React, { useEffect, useState, useRef } from 'react'
-import Helmet from 'react-helmet'
+import React, { useEffect, useState, useRef } from 'react'
+import { Helmet } from 'react-helmet'
 import * as CookieConsent from 'vanilla-cookieconsent'
 
 const CConsentStyleHelmet = () => (

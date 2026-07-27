@@ -75,12 +75,18 @@ async function SibGetTemplate(name, htmlContent) {
   }
 }
 
-export async function SibGetTemplateId(templateName) {
+export async function SibGetTemplateId(htmlFile) {
   try {
-    const htmlFile = path.resolve(__dirname, `../../assets/email-templates/${templateName}.html`)
     const htmlContent = fs.readFileSync(htmlFile, 'utf8')
     if (!htmlContent) return undefined
-    const name = packageJSON.name + '/' + templateName
+    const templateName = path.basename(htmlFile, '.html')
+    
+    // Extract repo name from path - find the directory just before "assets"
+    const pathParts = path.normalize(htmlFile).split(path.sep)
+    const assetsIndex = pathParts.findIndex(part => part === 'assets')
+    const repoName = assetsIndex > 0 ? pathParts[assetsIndex - 1] : 'unknown-repo'
+    
+    const name = repoName + '/' + templateName
     const template = await SibGetTemplate(name, htmlContent)
     if (template) return template.id
     const newId = await SibCreateTemplate(name, templateName, htmlContent)
