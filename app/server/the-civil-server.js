@@ -75,6 +75,8 @@ class HttpServer {
     this.routesDirPaths = [path.resolve(__dirname, '../routes')]
     this.serverEventsDirPaths = [path.resolve(__dirname, '../events')]
     this.socketAPIsDirPaths = [path.resolve(__dirname, '../socket-apis')]
+    this.cookies = [] // array of { name: string, category: string, accepted: boolean, onAccepted: func(), onRevoked: func() }
+
     this.App = App
     this.setUserCookie = setUserCookie.bind(this) // user cookie needs this context so it doesn't have to lookup users in the DB every time
     this.socketAPI = new SocketAPI()
@@ -83,6 +85,10 @@ class HttpServer {
         logger.error('theCivliServer: Uncaught Exception thrown\n', err, '\ncontinuing')
       })
     }
+  }
+
+  addCookie({ name, category, onAccepted, onRevoked }) {
+    this.cookies.push({ name, category, accepted: false, onAccepted, onRevoked })
   }
 
   addRoutesDirectory(dirPath) {

@@ -27,9 +27,33 @@ function hasRequiredCookieConsent(req) {
   return !!(consent && Array.isArray(consent.categories) && consent.categories.includes('necessary'))
 }
 
+// Iterates this.cookies and fires onAccepted/onRevoked when consent state changes.
+// must be called with 'this' of the server
+function processCookieConsent(req, cookies) {
+  const consent = parseConsentCookie(req.cookies && req.cookies.cc_cookie)
+  const categories = (consent && Array.isArray(consent.categories) && consent.categories) || []
+  const services = (consent && consent.services) || {}
+
+  for (const cookie of cookies) {
+    const categoryServices = services[cookie.category]
+    const isAccepted = Array.isArray(categoryServices)
+      ? categoryServices.includes(cookie.name)
+      : categories.includes(cookie.category)
+    if (isAccepted && !cookie.accepted) {
+      cookie.accepted = true
+      if (typeof cookie.onAccepted === 'function') cookie.onAccepted()
+    } else if (!isAccepted && cookie.accepted) {
+      cookie.accepted = false
+      if (typeof cookie.onRevoked === 'function') cookie.onRevoked()
+    }
+  }
+}
+
 // must be called with 'this' of the server
 async function setCookieUser(req, res, next) {
   var cookie
+
+  processCookieConsent(req, this.cookies)
 
   if (!hasRequiredCookieConsent(req)) {
     res.clearCookie('synuser')
