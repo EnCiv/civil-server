@@ -16,26 +16,5 @@ export function createMongoAppender(source) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// log4js compatibility shim (used by the tests in __tests__/mongo-logger.js
-// which still wire up log4js directly to verify the pipeline end-to-end).
-// Keep these so the existing tests don't need to change.
-// ---------------------------------------------------------------------------
-function mongologgerAppender(layout, timezoneOffset, source) {
-  return function (loggingEvent) {
-    Log.create({
-      startTime: loggingEvent.startTime,
-      source,
-      level: loggingEvent.level.levelStr.toLowerCase(),
-      data: loggingEvent.data,
-    })
-  }
-}
-
-function configure(config) {
-  return mongologgerAppender(null, config.timezoneOffset, config.source || '')
-}
-
-export { mongologgerAppender as appender, configure }
-export default { appender: mongologgerAppender, configure, createMongoAppender }
+export default { createMongoAppender }
 

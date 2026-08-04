@@ -8,8 +8,8 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
 import { Mongo } from '@enciv/mongo-collections'
 import { MongoMemoryServer } from 'mongodb-memory-server'
-import log4js from 'log4js'
-import mongologger from '../mongo-logger'
+import { createLogger } from '../logger'
+import { createMongoAppender } from '../mongo-logger'
 import Log from '../../../models/log'
 
 // prevent Log.create from bailing out before the db is connected
@@ -21,26 +21,11 @@ beforeAll(async () => {
   MemoryServer = await MongoMemoryServer.create()
   await Mongo.connect(MemoryServer.getUri())
 
-  // Mirror the configuration in the-civil-server.js, but only with the mongo
-  // appenders (no stderr) so test output stays clean.
-  log4js.configure({
-    appenders: {
-      nodeMongoAppender: { type: mongologger, source: 'node' },
-      browserMongoAppender: { type: mongologger, source: 'browser' },
-    },
-    categories: {
-      node: { appenders: ['nodeMongoAppender'], level: 'debug' },
-      browser: { appenders: ['browserMongoAppender'], level: 'debug' },
-      default: { appenders: ['nodeMongoAppender'], level: 'debug' },
-    },
-  })
-
-  global.logger = log4js.getLogger('node')
-  global.bslogger = log4js.getLogger('browser')
+  global.logger = createLogger([createMongoAppender('node')])
+  global.bslogger = createLogger([createMongoAppender('browser')])
 })
 
 afterAll(async () => {
-  await new Promise(resolve => log4js.shutdown(resolve))
   await Mongo.disconnect()
   await MemoryServer.stop()
 })

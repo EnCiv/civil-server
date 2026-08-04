@@ -440,6 +440,184 @@ util                  ^0.12.5
 
 ---
 
+### Phase 13 — Complete log4js Removal (Phase 11 cleanup)
+
+**Why:** Phase 11 introduced the new thin logger and refactored the three appender files to export `create*Appender()` factories, but left log4js compatibility shims in all three files so the existing tests would not need to change. Both test files still wire log4js directly. `log4js` and `log4js-extend` remain in `dependencies` in both repos. This phase removes the shims, updates the two test files to use the new API, and uninstalls the packages.
+
+**Repos affected:** both `civil-server-update` and `civil-client`.
+
+#### civil-server-update changes
+
+**1. `app/server/util/__tests__/mongo-logger.js` — replace log4js with createLogger**
+
+```diff
+-import log4js from 'log4js'
++import { createLogger } from '../logger'
+ import mongologger from '../mongo-logger'
++import { createMongoAppender } from '../mongo-logger'
+ ...
+ beforeAll(async () => {
+   await Mongo.connect(MemoryServer.getUri())
+-  log4js.configure({
+-    appenders: {
+-      nodeMongoAppender: { type: mongologger, source: 'node' },
+-      browserMongoAppender: { type: mongologger, source: 'browser' },
+-    },
+-    categories: {
+-      node: { appenders: ['nodeMongoAppender'], level: 'debug' },
+-      browser: { appenders: ['browserMongoAppender'], level: 'debug' },
+-      default: { appenders: ['nodeMongoAppender'], level: 'debug' },
+-    },
+-  })
+-  global.logger = log4js.getLogger('node')
+-  global.bslogger = log4js.getLogger('browser')
++  global.logger = createLogger([createMongoAppender('node')])
++  global.bslogger = createLogger([createMongoAppender('browser')])
+ })
+ 
+ afterAll(async () => {
+-  await new Promise(resolve => log4js.shutdown(resolve))
+   await Mongo.disconnect()
+```
+
+The `mongologger` default import is no longer referenced after removing the `log4js.configure` call; remove it too.
+
+**2. `app/socket-apis/__tests__/socketlogger.js` — replace log4js with createLogger**
+
+```diff
+-import log4js from 'log4js'
+-import bconsole from 'civil-client/app/client/bconsole'
+-import clientSocketlogger from 'civil-client/app/client/socketlogger'
++import { createLogger } from 'civil-client/app/client/logger'
++import { createBconsoleAppender } from 'civil-client/app/client/bconsole'
++import { createSocketloggerAppender } from 'civil-client/app/client/socketlogger'
+ import serverSocketlogger from '../socketlogger'
+-import mongologger from '../../server/util/mongo-logger'
++import { createMongoAppender } from '../../server/util/mongo-logger'
+```
+
+In the top-level `afterAll`:
+```diff
+ afterAll(async () => {
+-  await new Promise(resolve => log4js.shutdown(resolve))
+   await Mongo.disconnect()
+```
+
+In the `bconsole appender` describe's `beforeEach`:
+```diff
+ beforeEach(() => {
+   consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+-  log4js.configure({
+-    appenders: { bconsole: { type: bconsole } },
+-    categories: { default: { appenders: ['bconsole'], level: 'debug' } },
+-    disableClustering: true,
+-  })
+-  window.logger = log4js.getLogger('browser')
++  window.logger = createLogger([createBconsoleAppender()])
+ })
+```
+
+In the `socketlogger: browser → socket → bslogger → mongo` describe's `beforeAll`:
+```diff
+ beforeAll(async () => {
+   await jestSocketApiSetup(TEST_USER_ID, [['socketlogger', serverSocketlogger]])
+-  log4js.configure({
+-    appenders: {
+-      bconsoleAppender: { type: bconsole },
+-      socketloggerAppender: { type: clientSocketlogger },
+-      browserMongoAppender: { type: mongologger, source: 'browser' },
+-    },
+-    categories: {
+-      browser: { appenders: ['browserMongoAppender'], level: 'debug' },
+-      browserClient: { appenders: ['bconsoleAppender', 'socketloggerAppender'], level: 'debug' },
+-      default: { appenders: ['bconsoleAppender'], level: 'debug' },
+-    },
+-    disableClustering: true,
+-  })
+-  global.bslogger = log4js.getLogger('browser')
+-  window.logger = log4js.getLogger('browserClient')
++  global.bslogger = createLogger([createMongoAppender('browser')])
++  window.logger = createLogger([createBconsoleAppender(), createSocketloggerAppender()])
+ })
+```
+
+**3. `app/server/util/mongo-logger.js` — remove log4js shim**
+
+Delete from the shim comment block to the end of the file, then replace the default export:
+
+```diff
+ export function createMongoAppender(source) { ... }
+ 
+-// ---------------------------------------------------------------------------
+-// log4js compatibility shim (used by the tests in __tests__/mongo-logger.js
+-// which still wire up log4js directly to verify the pipeline end-to-end).
+-// Keep these so the existing tests don't need to change.
+-// ---------------------------------------------------------------------------
+-function mongologgerAppender(layout, timezoneOffset, source) { ... }
+-function configure(config) { ... }
+-export { mongologgerAppender as appender, configure }
+-export default { appender: mongologgerAppender, configure, createMongoAppender }
++export default { createMongoAppender }
+```
+
+**4. `package.json` (civil-server-update) — remove log4js**
+
+```diff
+-"log4js": "git+https://github.com/ddfridley/log4js-node.git#onbrowser",
+-"log4js-extend": "^0.2.1",
+```
+
+Then `npm uninstall log4js log4js-extend`.
+
+#### civil-client changes
+
+**5. `app/client/bconsole.js` — remove log4js shim**
+
+```diff
+ export function createBconsoleAppender() { ... }
+ 
+-// ---------------------------------------------------------------------------
+-// log4js compatibility shim — used by the tests in
+-// civil-server/app/socket-apis/__tests__/socketlogger.js which still wire
+-// log4js directly to verify the end-to-end pipeline.
+-// ---------------------------------------------------------------------------
+-function bconsoleAppender(layout, timezoneOffset) { ... }
+-function configure(config) { ... }
+-export { bconsoleAppender as appender, configure }
+-export default { appender: bconsoleAppender, configure, createBconsoleAppender }
++export default { createBconsoleAppender }
+```
+
+**6. `app/client/socketlogger.js` — remove log4js shim**
+
+```diff
+ export function createSocketloggerAppender() { ... }
+ 
+-// ---------------------------------------------------------------------------
+-// log4js compatibility shim — used by tests that still wire log4js directly.
+-// ---------------------------------------------------------------------------
+-function socketloggerAppender(layout, timezoneOffset) { ... }
+-function configure(config) { ... }
+-export { socketloggerAppender as appender, configure }
+-export default { appender: socketloggerAppender, configure, createSocketloggerAppender }
++export default { createSocketloggerAppender }
+```
+
+**7. `package.json` (civil-client) — remove log4js**
+
+```diff
+-"log4js": "git+https://github.com/ddfridley/log4js-node.git#onbrowser",
+-"log4js-extend": "^0.2.1",
+```
+
+Then `npm uninstall log4js log4js-extend`.
+
+**Verify:** `npm test` in civil-server-update — all suites pass including the two updated test files. `npm run storybook` in civil-client starts cleanly.
+
+**Tests to add:** None — the two test files are updated in place and continue to verify the same end-to-end pipelines.
+
+---
+
 ## Testing Strategy Summary
 
 The table below maps each phase to tests that should be written **before and after** the migration change to catch regressions.
@@ -544,6 +722,7 @@ main
  └── phase/10-express-5             ✅ done
  └── phase/11-log4js-assessment     ✅ done
  └── phase/12-storybook-v10         ✅ done (in civil-client repo)
+ └── phase/13-log4js-cleanup        ⬜ todo
 ```
 
 Each branch should:

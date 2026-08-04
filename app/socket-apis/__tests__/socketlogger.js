@@ -22,11 +22,11 @@
 import { jest, describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals'
 import { Mongo } from '@enciv/mongo-collections'
 import { MongoMemoryServer } from 'mongodb-memory-server'
-import log4js from 'log4js'
-import bconsole from 'civil-client/app/client/bconsole'
-import clientSocketlogger from 'civil-client/app/client/socketlogger'
+import { createLogger } from 'civil-client/app/client/logger'
+import { createBconsoleAppender } from 'civil-client/app/client/bconsole'
+import { createSocketloggerAppender } from 'civil-client/app/client/socketlogger'
 import serverSocketlogger from '../socketlogger'
-import mongologger from '../../server/util/mongo-logger'
+import { createMongoAppender } from '../../server/util/mongo-logger'
 import Log from '../../models/log'
 import jestSocketApiSetup, { jestSocketApiTeardown } from '../../server/util/jest-socket-api-setup'
 
@@ -43,7 +43,6 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await new Promise(resolve => log4js.shutdown(resolve))
   await Mongo.disconnect()
   await MemoryServer.stop()
 })
@@ -59,18 +58,7 @@ describe('bconsole appender', () => {
 
   beforeEach(() => {
     consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
-
-    // Configure log4js with the bconsole appender only (no socket needed).
-    log4js.configure({
-      appenders: {
-        bconsole: { type: bconsole },
-      },
-      categories: {
-        default: { appenders: ['bconsole'], level: 'debug' },
-      },
-      disableClustering: true,
-    })
-    window.logger = log4js.getLogger('browser')
+    window.logger = createLogger([createBconsoleAppender()])
   })
 
   afterEach(() => {
@@ -112,28 +100,9 @@ describe('socketlogger: browser → socket → bslogger → mongo', () => {
 
   beforeAll(async () => {
     // Wire a real socket.io server that handles 'socketlogger' events.
-    // Must happen before log4js.configure so global.bslogger is stable when events arrive.
     await jestSocketApiSetup(TEST_USER_ID, [['socketlogger', serverSocketlogger]])
-
-    // Single log4js.configure call with:
-    //   - browser category → mongoAppender (used by server-side bslogger)
-    //   - browserClient category → bconsole + socketlogger (used by window.logger)
-    // Two separate configure() calls won't work because the second resets the first.
-    log4js.configure({
-      appenders: {
-        bconsoleAppender: { type: bconsole },
-        socketloggerAppender: { type: clientSocketlogger },
-        browserMongoAppender: { type: mongologger, source: 'browser' },
-      },
-      categories: {
-        browser: { appenders: ['browserMongoAppender'], level: 'debug' },
-        browserClient: { appenders: ['bconsoleAppender', 'socketloggerAppender'], level: 'debug' },
-        default: { appenders: ['bconsoleAppender'], level: 'debug' },
-      },
-      disableClustering: true,
-    })
-    global.bslogger = log4js.getLogger('browser')
-    window.logger = log4js.getLogger('browserClient')
+    global.bslogger = createLogger([createMongoAppender('browser')])
+    window.logger = createLogger([createBconsoleAppender(), createSocketloggerAppender()])
   })
 
   afterAll(() => {
