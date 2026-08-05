@@ -1,5 +1,6 @@
 // https://github.com/EnCiv/undebate-ssp/wiki/Send-In-Blue-Transactional
-const Brevo = require('@getbrevo/brevo')
+// @getbrevo/brevo v2→v6 migration: ../../doc/brevo-v2-to-v6.md
+const { BrevoClient } = require('@getbrevo/brevo')
 const path = require('path')
 const fs = require('fs') // require so it runs as is without having to bable it
 const packageJSON = require('../../package.json')
@@ -18,14 +19,14 @@ const uniqueParams = content =>
 async function SibCreateTemplate(name, templateName, htmlContent) {
   const subject = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/)[1] || templateName
   try {
-    let smtpTemplate = new Brevo.CreateSmtpTemplate()
-    smtpTemplate.templateName = name
-    smtpTemplate.subject = subject
-    smtpTemplate.isActive = true
-    smtpTemplate.htmlContent = htmlContent
-    smtpTemplate.sender = { name: '[DEFAULT_FROM_NAME]', email: brevoDefaultFromEmail }
-    smtpTemplate.replyTo = '[DEFAULT_REPLY_TO]'
-    const { body: data } = await SibSMTPApi.createSmtpTemplate(smtpTemplate)
+    const data = await SibSMTPApi.createSmtpTemplate({
+      templateName: name,
+      subject,
+      isActive: true,
+      htmlContent,
+      sender: { name: '[DEFAULT_FROM_NAME]', email: brevoDefaultFromEmail },
+      replyTo: '[DEFAULT_REPLY_TO]',
+    })
     return data?.id
   } catch (error) {
     logger.error(
@@ -37,9 +38,7 @@ async function SibCreateTemplate(name, templateName, htmlContent) {
 }
 
 async function SibGetTemplate(name, htmlContent) {
-  const {
-    body: { templates, count },
-  } = await SibSMTPApi.getSmtpTemplates()
+  const { templates, count } = await SibSMTPApi.getSmtpTemplates()
   // if new account with no templates yet, templates might be undefined
   // templates are send down with the largest template first in the list
   // older templates with the same name may appear though this seems inconsistent but the last one created will appear first becuase in the list
@@ -101,10 +100,8 @@ export async function SibGetTemplateId(htmlFile) {
 
 export function SibSendTransacEmail(props) {
   return new Promise((ok, ko) => {
-    let sendSmtpEmail = new Brevo.SendSmtpEmail()
-    Object.assign(sendSmtpEmail, props)
-    SibSMTPApi.sendTransacEmail(sendSmtpEmail).then(
-      ({ body }) => {
+    SibSMTPApi.sendTransacEmail({ ...props }).then(
+      body => {
         ok(body)
       },
       error => {
@@ -117,8 +114,8 @@ export function SibSendTransacEmail(props) {
 
 export function SibDeleteSmtpTemplate(id) {
   return new Promise((ok, ko) => {
-    SibSMTPApi.updateSmtpTemplate(id, { isActive: false }).then(() => {
-      SibSMTPApi.deleteSmtpTemplate(id).then(ok, ko)
+    SibSMTPApi.updateSmtpTemplate({ templateId: id, isActive: false }).then(() => {
+      SibSMTPApi.deleteSmtpTemplate({ templateId: id }).then(ok, ko)
     }, ko)
   })
 }
@@ -129,8 +126,7 @@ export const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_A
 export const brevoDefaultFromEmail = process.env.BREVO_DEFAULT_FROM_EMAIL || process.env.SENDINBLUE_DEFAULT_FROM_EMAIL
 
 if (brevoApiKey && brevoDefaultFromEmail) {
-  SibSMTPApi = new Brevo.TransactionalEmailsApi()
-  SibSMTPApi.authentications['apiKey'].apiKey = brevoApiKey
+  SibSMTPApi = new BrevoClient({ apiKey: brevoApiKey }).transactionalEmails
 } else {
   if (!brevoApiKey) logger.error('env ', 'BREVO_API_KEY (or SENDINBLUE_API_KEY)', 'not set. email sending disabled.')
   if (!brevoDefaultFromEmail)

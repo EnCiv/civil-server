@@ -31,6 +31,8 @@ module.exports = {
       // When civil-client is npm-linked, ensure only one copy of React is used
       react: path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      // webpack-dev-server v6 client imports 'process/browser'; resolve to the .js file
+      'process/browser': require.resolve('process/browser.js'),
     },
     fallback: {
       fs: false, // logger wants to require fs though it's not needed on the browser

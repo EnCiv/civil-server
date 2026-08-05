@@ -44,7 +44,7 @@ maybe('Test the Sendinblue Transactional APIs', () => {
     expect(id).toBeGreaterThan(0)
   })
   test('Template can be deleted', async () => {
-    await expect(SibDeleteSmtpTemplate(id)).resolves.not.toThrowError()
+    await SibDeleteSmtpTemplate(id)
   })
   let newId
   test('Template can be created', async () => {
