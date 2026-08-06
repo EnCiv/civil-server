@@ -9,10 +9,7 @@ module.exports = {
   // Override @shelf/jest-mongodb preset transform: enable JSX and .mjs files.
   // The preset default only enables TypeScript syntax with no JSX support.
   transform: {
-    '^.+\.m?[jt]sx?$': [
-      '@swc/jest',
-      { jsc: { parser: { syntax: 'ecmascript', jsx: true } } },
-    ],
+    '^.+\.m?[jt]sx?$': ['@swc/jest', { jsc: { parser: { syntax: 'ecmascript', jsx: true } } }],
   },
   // Force Node.js-side ws package even in jsdom test environments.
   // The ws package has a browser field that returns a throw-only stub;
