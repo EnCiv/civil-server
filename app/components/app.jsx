@@ -37,7 +37,7 @@ function App(props) {
           </Helmet>
           <DynamicFontSizeHelmet />
           {/* if an iota is not found, it's an unusual error. do not further complicate the user experience by asking the user for cookie consent. */}
-          <EncivCookies user={newProps.user} />
+          <EncivCookies user={newProps.user} cookieCategories={newProps.cookieCategories} cookieScripts={newProps.cookieScripts} />
           <WebComponents key="web-component" webComponent={iota.webComponent} {...newProps} />
           <Footer key="footer" />
         </div>

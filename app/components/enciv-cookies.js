@@ -3,9 +3,17 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Helmet } from 'react-helmet'
 import * as CookieConsent from 'vanilla-cookieconsent'
+export default EncivCookies
 
-const CConsentStyleHelmet = () => (
-  <Helmet>
+// scripts (acceptedScript/revokedScript from server.addCookie) only need to run once, on the server render.
+const CConsentStyleHelmet = ({ scripts }) => (
+  <Helmet
+    script={
+      typeof window === 'undefined' && Array.isArray(scripts) && scripts.length
+        ? [{ type: 'text/javascript', innerHTML: scripts.join('\n') }]
+        : []
+    }
+  >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css" />
   </Helmet>
 )
@@ -45,6 +53,7 @@ function stopAnalytics() {
   
   // Full opt-out requires a browser refresh to prevent GA from re-initializing and setting new cookies
   alert('Analytics has been disabled. Please refresh your browser to fully complete the opt-out.')
+}
 
 // Static consent configuration — independent of component state
 const modalSections = {
@@ -63,20 +72,10 @@ const modalSections = {
   },
 }
 
-// We can extend this by storing in the database
-const services = {
-  necessary: [],
-  analytics: [
-    {
-      label: 'Google Analytics',
-      onAccept: () => {},
-      onReject: () => {},
-    },
-  ],
-}
-
 /* 
-Format the services data lists for each category.
+Build the services data lists for each category from the server's registered cookie list
+(props.cookieCategories - populated server-side via server.addCookie({ name, category, onAccepted, onRevoked })
+and passed down through reactProps/set-user-cookie.js), instead of hardcoding them here.
 
 Was a bit hard to find documentation, 
 but this is the object structure for displaying individual services.
@@ -90,26 +89,40 @@ but this is the object structure for displaying individual services.
     ...
 }
 */
-
-const consentCategories = {}
-// Init the services lists
-for (const key of Object.keys(services)) {
-  consentCategories[key] = {
-    services: services[key].reduce((result, service) => {
-      result[service.label] = { ...service }
-      return result
-    }, {}),
+function buildConsentCategories(cookieCategories) {
+  // Group the registered cookies by category
+  const services = { necessary: [] }
+  for (const { name, category } of cookieCategories || []) {
+    if (!services[category]) services[category] = []
+    services[category].push({
+      label: name,
+      onAccept: () => {},
+      onReject: () => {},
+    })
   }
 
-  if (key === 'necessary') {
-    consentCategories[key].readOnly = true
-    consentCategories[key].enabled = true
+  const consentCategories = {}
+  // Init the services lists - one section per category defined in modalSections
+  for (const key of Object.keys(modalSections)) {
+    consentCategories[key] = {
+      services: (services[key] || []).reduce((result, service) => {
+        result[service.label] = { ...service }
+        return result
+      }, {}),
+    }
+
+    if (key === 'necessary') {
+      consentCategories[key].readOnly = true
+      consentCategories[key].enabled = true
+    }
   }
+  return consentCategories
 }
 
 function EncivCookies(props) {
   const [cookie, setCookie] = useState()
   const hasMounted = useRef(false)
+  const consentCategories = buildConsentCategories(props.cookieCategories)
 
   useEffect(() => {
     // Prevent this running on the initial render
@@ -188,9 +201,8 @@ function EncivCookies(props) {
 
   return (
     <div>
-      <CConsentStyleHelmet />
+      <CConsentStyleHelmet scripts={props.cookieScripts} />
     </div>
   )
 }
 
-export default EncivCookies

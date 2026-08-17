@@ -92,7 +92,7 @@ class HttpServer {
     this.routesDirPaths = [path.resolve(__dirname, '../routes')]
     this.serverEventsDirPaths = [path.resolve(__dirname, '../events')]
     this.socketAPIsDirPaths = [path.resolve(__dirname, '../socket-apis')]
-    this.cookies = [] // array of { name: string, category: string, accepted: boolean, onAccepted: func(), onRevoked: func() }
+    this.cookies = [] // array of { name, category, accepted, onAccepted, onRevoked } - onAccepted/onRevoked are JS source strings run in the browser via Helmet.
 
     this.App = App
     this.setUserCookie = setUserCookie.bind(this) // user cookie needs this context so it doesn't have to lookup users in the DB every time

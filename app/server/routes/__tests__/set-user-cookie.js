@@ -23,68 +23,82 @@ const makeContext = (cookies = []) => ({
 })
 
 describe('processCookieConsent', () => {
-  test('calls onAccepted when category transitions from not-accepted to accepted', async () => {
-    const onAccepted = jest.fn()
-    const context = makeContext([{ name: 'analytics', category: 'analytics', accepted: false, onAccepted }])
+  test('collects the onAccepted script when category is accepted', async () => {
+    const context = makeContext([{ name: 'analytics', category: 'analytics', onAccepted: 'ACCEPT_SCRIPT' }])
+    const req = makeReq(['necessary', 'analytics'])
 
-    await setCookieUser.call(context, makeReq(['necessary', 'analytics']), makeRes(), jest.fn())
+    await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onAccepted).toHaveBeenCalledTimes(1)
+    expect(req.reactProps.cookieScripts).toContain('ACCEPT_SCRIPT')
     expect(context.cookies[0].accepted).toBe(true)
   })
 
-  test('does not call onAccepted again when category is already accepted', async () => {
-    const onAccepted = jest.fn()
-    const context = makeContext([{ name: 'analytics', category: 'analytics', accepted: true, onAccepted }])
+  test('collects the onRevoked script when category is not accepted', async () => {
+    const context = makeContext([{ name: 'analytics', category: 'analytics', onRevoked: 'REVOKE_SCRIPT' }])
+    const req = makeReq(['necessary'])
 
-    await setCookieUser.call(context, makeReq(['necessary', 'analytics']), makeRes(), jest.fn())
+    await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onAccepted).not.toHaveBeenCalled()
-  })
-
-  test('calls onRevoked when category transitions from accepted to not-accepted', async () => {
-    const onRevoked = jest.fn()
-    const context = makeContext([{ name: 'analytics', category: 'analytics', accepted: true, onRevoked }])
-
-    await setCookieUser.call(context, makeReq(['necessary']), makeRes(), jest.fn())
-
-    expect(onRevoked).toHaveBeenCalledTimes(1)
+    expect(req.reactProps.cookieScripts).toContain('REVOKE_SCRIPT')
     expect(context.cookies[0].accepted).toBe(false)
   })
 
-  test('does not call onRevoked when category was never accepted', async () => {
-    const onRevoked = jest.fn()
-    const context = makeContext([{ name: 'analytics', category: 'analytics', accepted: false, onRevoked }])
+  test('does not collect the onAccepted script when no consent cookie is present', async () => {
+    const context = makeContext([{ name: 'analytics', category: 'analytics', onAccepted: 'ACCEPT_SCRIPT' }])
+    const req = makeReq(null)
 
-    await setCookieUser.call(context, makeReq(['necessary']), makeRes(), jest.fn())
+    await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onRevoked).not.toHaveBeenCalled()
-  })
-
-  test('does not call onAccepted when no consent cookie is present', async () => {
-    const onAccepted = jest.fn()
-    const context = makeContext([{ name: 'analytics', category: 'analytics', accepted: false, onAccepted }])
-
-    await setCookieUser.call(context, makeReq(null), makeRes(), jest.fn())
-
-    expect(onAccepted).not.toHaveBeenCalled()
+    expect(req.reactProps.cookieScripts).not.toContain('ACCEPT_SCRIPT')
   })
 
   test('handles multiple cookies across different categories independently', async () => {
-    const onAcceptedAnalytics = jest.fn()
-    const onRevokedMarketing = jest.fn()
     const context = makeContext([
-      { name: 'ga', category: 'analytics', accepted: false, onAccepted: onAcceptedAnalytics },
-      { name: 'ads', category: 'marketing', accepted: true, onRevoked: onRevokedMarketing },
+      { name: 'ga', category: 'analytics', onAccepted: 'GA_ACCEPT' },
+      { name: 'ads', category: 'marketing', onRevoked: 'ADS_REVOKE' },
     ])
+    const req = makeReq(['necessary', 'analytics'])
 
     // analytics accepted, marketing revoked
-    await setCookieUser.call(context, makeReq(['necessary', 'analytics']), makeRes(), jest.fn())
+    await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onAcceptedAnalytics).toHaveBeenCalledTimes(1)
+    expect(req.reactProps.cookieScripts).toEqual(expect.arrayContaining(['GA_ACCEPT', 'ADS_REVOKE']))
     expect(context.cookies[0].accepted).toBe(true)
-    expect(onRevokedMarketing).toHaveBeenCalledTimes(1)
     expect(context.cookies[1].accepted).toBe(false)
+  })
+})
+
+describe('hasRequiredCookieConsent gate', () => {
+  test('clears synuser cookie when no cc_cookie is present', async () => {
+    const context = makeContext()
+    const res = makeRes()
+
+    await setCookieUser.call(context, makeReq(null), res, jest.fn())
+
+    expect(res.clearCookie).toHaveBeenCalledWith('synuser')
+    expect(res.cookie).not.toHaveBeenCalled()
+  })
+
+  test('clears synuser cookie when necessary category is not accepted', async () => {
+    const context = makeContext()
+    const res = makeRes()
+
+    await setCookieUser.call(context, makeReq(['analytics']), res, jest.fn())
+
+    expect(res.clearCookie).toHaveBeenCalledWith('synuser')
+    expect(res.cookie).not.toHaveBeenCalled()
+  })
+
+  test('does not clear synuser cookie when necessary category is accepted', async () => {
+    const context = makeContext()
+    const res = makeRes()
+    const req = makeReq(['necessary'])
+    req.user = { email: 'a@b.com', _id: 'id1' }
+
+    await setCookieUser.call(context, req, res, jest.fn())
+
+    expect(res.clearCookie).not.toHaveBeenCalled()
+    expect(res.cookie).toHaveBeenCalledWith('synuser', expect.objectContaining({ email: 'a@b.com', id: 'id1' }), expect.any(Object))
   })
 })
 
@@ -106,53 +120,47 @@ describe('addCookie', () => {
 
 describe('processCookieConsent — per-service individual control', () => {
   test('accepts a cookie when its name is listed in services for its category', async () => {
-    const onAccepted = jest.fn()
-    const context = makeContext([{ name: 'Google Analytics', category: 'analytics', accepted: false, onAccepted }])
+    const context = makeContext([{ name: 'Google Analytics', category: 'analytics', onAccepted: 'GA_ACCEPT' }])
     const req = makeReq(['necessary', 'analytics'], { analytics: ['Google Analytics'] })
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onAccepted).toHaveBeenCalledTimes(1)
+    expect(req.reactProps.cookieScripts).toContain('GA_ACCEPT')
     expect(context.cookies[0].accepted).toBe(true)
   })
 
   test('does not accept a cookie whose name is absent from services even if category is accepted', async () => {
-    const onAccepted = jest.fn()
-    const context = makeContext([{ name: 'Mixpanel', category: 'analytics', accepted: false, onAccepted }])
+    const context = makeContext([{ name: 'Mixpanel', category: 'analytics', onAccepted: 'MIXPANEL_ACCEPT' }])
     const req = makeReq(['necessary', 'analytics'], { analytics: ['Google Analytics'] })
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onAccepted).not.toHaveBeenCalled()
+    expect(req.reactProps.cookieScripts).not.toContain('MIXPANEL_ACCEPT')
     expect(context.cookies[0].accepted).toBe(false)
   })
 
   test('two cookies in same category toggle independently via services', async () => {
-    const onAcceptedGA = jest.fn()
-    const onRevokedMixpanel = jest.fn()
     const context = makeContext([
-      { name: 'Google Analytics', category: 'analytics', accepted: false, onAccepted: onAcceptedGA },
-      { name: 'Mixpanel', category: 'analytics', accepted: true, onRevoked: onRevokedMixpanel },
+      { name: 'Google Analytics', category: 'analytics', onAccepted: 'GA_ACCEPT' },
+      { name: 'Mixpanel', category: 'analytics', onRevoked: 'MIXPANEL_REVOKE' },
     ])
     // Only Google Analytics is listed in services
     const req = makeReq(['necessary', 'analytics'], { analytics: ['Google Analytics'] })
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onAcceptedGA).toHaveBeenCalledTimes(1)
+    expect(req.reactProps.cookieScripts).toEqual(expect.arrayContaining(['GA_ACCEPT', 'MIXPANEL_REVOKE']))
     expect(context.cookies[0].accepted).toBe(true)
-    expect(onRevokedMixpanel).toHaveBeenCalledTimes(1)
     expect(context.cookies[1].accepted).toBe(false)
   })
 
   test('falls back to category-level check when no services are listed for a category', async () => {
-    const onAccepted = jest.fn()
-    const context = makeContext([{ name: 'Google Analytics', category: 'analytics', accepted: false, onAccepted }])
+    const context = makeContext([{ name: 'Google Analytics', category: 'analytics', onAccepted: 'GA_ACCEPT' }])
     // category accepted, but no services object
     const req = makeReq(['necessary', 'analytics'])
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(onAccepted).toHaveBeenCalledTimes(1)
+    expect(req.reactProps.cookieScripts).toContain('GA_ACCEPT')
   })
 })

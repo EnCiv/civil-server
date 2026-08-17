@@ -27,33 +27,46 @@ function hasRequiredCookieConsent(req) {
   return !!(consent && Array.isArray(consent.categories) && consent.categories.includes('necessary'))
 }
 
-// Iterates this.cookies and fires onAccepted/onRevoked when consent state changes.
+// Collects the onAccepted/onRevoked script matching this request's current consent for CConsentStyleHelmet to render.
 // must be called with 'this' of the server
 function processCookieConsent(req, cookies) {
   const consent = parseConsentCookie(req.cookies && req.cookies.cc_cookie)
   const categories = (consent && Array.isArray(consent.categories) && consent.categories) || []
   const services = (consent && consent.services) || {}
+  const scripts = []
 
   for (const cookie of cookies) {
     const categoryServices = services[cookie.category]
     const isAccepted = Array.isArray(categoryServices)
       ? categoryServices.includes(cookie.name)
       : categories.includes(cookie.category)
-    if (isAccepted && !cookie.accepted) {
-      cookie.accepted = true
-      if (typeof cookie.onAccepted === 'function') cookie.onAccepted()
-    } else if (!isAccepted && cookie.accepted) {
-      cookie.accepted = false
-      if (typeof cookie.onRevoked === 'function') cookie.onRevoked()
-    }
+
+    const script = isAccepted ? cookie.onAccepted : cookie.onRevoked
+    if (script) scripts.push(script)
+
+    cookie.accepted = isAccepted
   }
+
+  return scripts
+}
+
+// Strips the browser script strings (onAccepted/onRevoked) so the list can be safely serialized to the client.
+function getCookieCategories(cookies) {
+  return cookies.map(({ name, category }) => ({ name, category }))
 }
 
 // must be called with 'this' of the server
 async function setCookieUser(req, res, next) {
   var cookie
 
-  processCookieConsent(req, this.cookies)
+  const cookieScripts = processCookieConsent(req, this.cookies)
+
+
+  // Expose the server's registered cookie/category list to the client via reactProps (same pattern as get-iota.js),
+  // so enciv-cookies.js can build its consent modal from real data instead of hardcoding it.
+  if (req.reactProps) Object.assign(req.reactProps, { cookieCategories: getCookieCategories(this.cookies), cookieScripts })
+  else req.reactProps = { cookieCategories: getCookieCategories(this.cookies), cookieScripts }
+
 
   if (!hasRequiredCookieConsent(req)) {
     res.clearCookie('synuser')
