@@ -38,7 +38,7 @@
     "@shelf/jest-mongodb": "^6.0.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.0",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/react": "^16.3.2",
     "concurrently": "^10.0.4",
     "cypress": "^15.20.0",
     "jest": "^30.4.2",
