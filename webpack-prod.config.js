@@ -22,7 +22,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['*', '.js', '.jsx'],
+    extensions: ['.*', '.js', '.jsx'],
     fallback: {
       fs: false, // logger wants to require fs though it's not needed on the browser
       path: require.resolve('path-browserify'),

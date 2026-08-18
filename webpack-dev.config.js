@@ -26,7 +26,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['*', '.js', '.jsx'],
+    extensions: ['.*', '.js', '.jsx'],
     alias: {
       // When civil-client is npm-linked, ensure only one copy of React is used
       react: path.resolve(__dirname, 'node_modules/react'),
