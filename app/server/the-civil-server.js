@@ -195,7 +195,10 @@ class HttpServer {
         this.app.use(
           '/assets/',
           express.static('assets', {
-            maxAge: process.env.NODE_ENV === 'production' ? process.env.ASSETS_MAX_AGE || 1 * 24 * 60 * 60 * 1000 : 0,
+            maxAge:
+              process.env.NODE_ENV === 'production' && !process.env.HOSTNAME.includes('localhost')
+                ? process.env.ASSETS_MAX_AGE || 1 * 24 * 60 * 60 * 1000
+                : 0,
           })
         ) // max-age in ms - 1 days these things only change through development
         this.app.enable('trust proxy')

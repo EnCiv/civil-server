@@ -70,28 +70,11 @@ function serverReactRender(App, req, res, next) {
       </HelmetProvider>
     )
 
-    // figure out if browsers supports ES6 or not.
-    const ifES6 = () =>
-      props.browserConfig &&
-      ((props.browserConfig.browser.name == 'chrome' && props.browserConfig.browser.version[0] >= 54) ||
-        (props.browserConfig.browser.name == 'safari' && props.browserConfig.browser.version[0] >= 11) ||
-        (props.browserConfig.browser.name == 'opera' && props.browserConfig.browser.version[0] >= 41) ||
-        (props.browserConfig.browser.name == 'firefox' && props.browserConfig.browser.version[0] >= 50) ||
-        (props.browserConfig.browser.name == 'edge' && props.browserConfig.browser.version[0] >= 15))
-        ? (logger.info('index browser supports ES6'), '')
-        : (logger.info('index browser does not support ES6'), '')
-
-    // add google analitics code if env is set - usually only set in production
-
     const ifLoadSockets = () =>
       !(
-        req.hostname.startsWith('cc2020') || // host is the CDN
-        req.hostname.startsWith('undebate-stage1') || // host is stage-1 for testing
-        (dev === 'production' &&
-          props.iota &&
-          props.iota.webComponent &&
-          props.iota.webComponent.participants &&
-          !props.iota.webComponent.participants.human)
+        process.env.NO_SOCKET_IO || // set by ENV variable on server
+        req.hostname.startsWith('cc2020') || // legacy - host is the CDN
+        req.hostname.startsWith('undebate-stage1') // legacy - host is stage-1 for testing
       )
 
     return res.send(
@@ -145,7 +128,6 @@ function serverReactRender(App, req, res, next) {
                 </head>
                 <body style="margin: 0; padding: 0">
                     <div id="synapp">${body}</div>
-                    ${ifES6()}
                     ${ifLoadSockets() ? '<script src="/socket.io/socket.io.js" ></script>' : ''}
                     <script src='/assets/webpack/main.js' ></script>
                     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
