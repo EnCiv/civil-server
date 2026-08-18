@@ -1,3 +1,9 @@
+// Force NODE_ENV to 'test' during testing to ensure React development builds
+// are used (which export React.act needed by @testing-library/react).
+// This overrides any external NODE_ENV=production setting and must run
+// before module resolution (before React is imported).
+process.env.NODE_ENV = 'test'
+
 module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest-test-setup.js'],
   preset: '@shelf/jest-mongodb',
