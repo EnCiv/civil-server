@@ -98,7 +98,6 @@ function serverReactRender(App, req, res, next) {
                     <meta name="mobile-web-app-capable" content="yes"/>
                     <link rel="preconnect" href="https://fonts.googleapis.com"/>
                     <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
-                    <link rel="preconnect" href="https://kit.fontawesome.com"/>
                     <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
                     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
                     <style type="text/css">
@@ -106,7 +105,6 @@ function serverReactRender(App, req, res, next) {
                     </style>
                     <script>window.reactProps=${JSON.stringify(props) + ''}</script>
                     <script>window.env="${props.env}"</script>
-                    <script src="https://kit.fontawesome.com/7258b64f3b.js" crossorigin="anonymous" async></script>
                     ${serverReactRender.head.reduce(
                       (str, h) =>
                         str +
