@@ -8,7 +8,7 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
 import { Mongo } from '@enciv/mongo-collections'
 import { MongoMemoryServer } from 'mongodb-memory-server'
-import { createLogger } from '../logger'
+import { createLogger } from 'civil-client/app/client/logger'
 import { createMongoAppender } from '../mongo-logger'
 import Log from '../../../models/log'
 
