@@ -163,6 +163,25 @@ function EncivCookies(props) {
       onChange: cookie => {
         setCookie(cookie)
       },
+      onConsent: ({ cookie }) => {
+        // Fires once run() has fully initialized (first consent action and every page load) -
+        // calling CookieConsent.getCookie() right after run() races the library's own init.
+        setCookie(cookie)
+
+        // DEBUG: log every registered cookie and whether it's currently enabled/disabled (dev only).
+        if (window.process && window.process.env && window.process.env.NODE_ENV === 'development') {
+          const consentCategories = (cookie && cookie.categories) || []
+          const consentServices = (cookie && cookie.services) || {}
+          console.log(
+            'EncivCookies debug - cookie status on load:',
+            (props.cookieCategories || []).map(({ name, category }) => {
+              const categoryServices = consentServices[category]
+              const enabled = Array.isArray(categoryServices) ? categoryServices.includes(name) : consentCategories.includes(category)
+              return { name, category, enabled }
+            })
+          )
+        }
+      },
       categories: consentCategories,
       language: {
         default: 'en',
@@ -194,9 +213,6 @@ function EncivCookies(props) {
         },
       },
     })
-
-    // Apply existing saved consent on first load for returning users.
-    setCookie(CookieConsent.getCookie())
   }, [])
 
   return (

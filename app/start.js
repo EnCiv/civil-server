@@ -41,6 +41,18 @@ const cookieDefinitions = [
       if (gtmElement) gtmElement.remove()
     },
   },
+  {
+    name: 'Test Cookie 1',
+    category: 'analytics',
+    onAccepted: function () {},
+    onRevoked: function () {},
+  },
+  {
+    name: 'Test Cookie 2',
+    category: 'analytics',
+    onAccepted: function () {},
+    onRevoked: function () {},
+  },
 ]
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
