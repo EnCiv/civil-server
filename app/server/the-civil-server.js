@@ -62,7 +62,12 @@ class HttpServer {
           '*.google-analytics.com',
         ],
         fontSrc: ["'self'", '*.gstatic.com', 'ka-f.fontawesome.com'],
-        styleSrc: ["'self'", "'unsafe-inline'", '*.googleapis.com'],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          '*.googleapis.com',
+          'https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css',
+        ],
         imgSrc: ["'self'", '*.cloudinary.com', 'enciv.org', '*.google-analytics.com'],
         mediaSrc: ["'self'", '*.cloudinary.com', 'blob:', 'mediastream:'],
         connectSrc: ["'self'", 'ka-f.fontawesome.com', '*.google-analytics.com'],
@@ -87,6 +92,8 @@ class HttpServer {
     this.routesDirPaths = [path.resolve(__dirname, '../routes')]
     this.serverEventsDirPaths = [path.resolve(__dirname, '../events')]
     this.socketAPIsDirPaths = [path.resolve(__dirname, '../socket-apis')]
+    this.cookies = [] // array of { name, category, accepted, onAccepted, onRevoked } - onAccepted/onRevoked are JS source strings run in the browser via Helmet.
+
     this.App = App
     this.setUserCookie = setUserCookie.bind(this) // user cookie needs this context so it doesn't have to lookup users in the DB every time
     this.socketAPI = new SocketAPI()
@@ -99,6 +106,10 @@ class HttpServer {
       logger.error('Unhandled Rejection at:', promise, 'reason:', reason)
       // Log the error or handle it as needed
     })
+  }
+
+  addCookie({ name, category, onAccepted, onRevoked }) {
+    this.cookies.push({ name, category, accepted: false, onAccepted, onRevoked })
   }
 
   addRoutesDirectory(dirPath) {

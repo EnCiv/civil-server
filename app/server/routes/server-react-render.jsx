@@ -6,18 +6,6 @@ import { JssProvider, SheetsRegistry, createGenerateId } from 'react-jss'
 import cloneDeep from 'lodash/cloneDeep'
 import { Helmet } from 'react-helmet'
 
-const googleAnalytics = (props, req, res) =>
-  process.env.GOOGLE_ANALYTICS
-    ? `<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', '${process.env.GOOGLE_ANALYTICS}');
-</script>`
-    : ''
-
 // extract meta tags from the web component
 const metaTags = (props, req, res) =>
   (props.iota &&
@@ -154,7 +142,6 @@ function serverReactRender(App, req, res, next) {
 }
 
 serverReactRender.head = []
-serverReactRender.head.push(googleAnalytics)
 serverReactRender.head.push(metaTags)
 
 export default serverReactRender
