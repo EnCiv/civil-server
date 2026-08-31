@@ -18,41 +18,19 @@ const CConsentStyleHelmet = ({ scripts }) => (
   </Helmet>
 )
 
-function startAnalytics() {
-  // The BrowserEnv component injects ENV selected vars from the server side to the client side.
-  if (!window.process.env.GOOGLE_ANALYTICS) return
-  if (document.getElementById('googletagmanager')) return
-
-  window.dataLayer = window.dataLayer || []
-  window.gtag = function () {
-    window.dataLayer.push(arguments)
-  }
-  window.gtag('js', new Date())
-  window.gtag('config', `${window.process.env.GOOGLE_ANALYTICS}`)
-
-  const script = document.createElement('script')
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${window.process.env.GOOGLE_ANALYTICS}`
-  script.id = 'googletagmanager'
-  script.async = true
-  document.head.appendChild(script)
-  console.log('Starting analytics')
+// Runs a registered cookie's onAccepted/onRevoked source string (see server.addCookie) the same way
+// the server-rendered Helmet <script> does, so live consent changes don't need duplicate hardcoded logic.
+function runCookieScript(script) {
+  if (!script) return
+  const el = document.createElement('script')
+  el.text = script
+  document.head.appendChild(el)
+  el.remove()
 }
 
-function stopAnalytics() {
-  console.log('Stopping analytics')
-  
-  // Clear Google Analytics cookies for this session
-  ;['_ga', '_gid', '_gat'].forEach(name => {
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
-  })
-  
-  delete window.dataLayer
-  delete window.gtag
-  const gtmElement = document.getElementById('googletagmanager')
-  if (gtmElement) gtmElement.remove()
-  
-  // Full opt-out requires a browser refresh to prevent GA from re-initializing and setting new cookies
-  alert('Analytics has been disabled. Please refresh your browser to fully complete the opt-out.')
+function isCookieAccepted(categories, services, category, name) {
+  const categoryServices = services[category]
+  return Array.isArray(categoryServices) ? categoryServices.includes(name) : categories.includes(category)
 }
 
 // Static consent configuration — independent of component state
@@ -151,8 +129,9 @@ function EncivCookies(props) {
       console.log('Consent data successfully saved.')
     })
 
-    if (categories.includes('analytics')) startAnalytics()
-    else stopAnalytics()
+    for (const { name, category, onAccepted, onRevoked } of props.cookieCategories || []) {
+      runCookieScript(isCookieAccepted(categories, consentServices, category, name) ? onAccepted : onRevoked)
+    }
   }, [cookie])
 
   useEffect(() => {
@@ -174,11 +153,11 @@ function EncivCookies(props) {
           const consentServices = (cookie && cookie.services) || {}
           console.log(
             'EncivCookies debug - cookie status on load:',
-            (props.cookieCategories || []).map(({ name, category }) => {
-              const categoryServices = consentServices[category]
-              const enabled = Array.isArray(categoryServices) ? categoryServices.includes(name) : consentCategories.includes(category)
-              return { name, category, enabled }
-            })
+            (props.cookieCategories || []).map(({ name, category }) => ({
+              name,
+              category,
+              enabled: isCookieAccepted(consentCategories, consentServices, category, name),
+            }))
           )
         }
       },

@@ -133,9 +133,14 @@ class Consent extends Collection {
       doc = this.modifySingleConsent(doc, category, isGranted, terms, services)
     }
 
-    const query = { _id: doc._id }
     const { _id, ...docWithoutId } = doc
-    const result = await this.findOneAndUpdate(query, { $set: docWithoutId }, { returnDocument: 'after' })
+    const { error, value } = this.validate(docWithoutId)
+    if (error) {
+      logger.error('Consent.updateConsent: validation failed', error)
+      return undefined
+    }
+
+    const result = await this.findOneAndUpdate({ _id }, { $set: value }, { returnDocument: 'after' })
     return result.value
   }
 }

@@ -43,16 +43,15 @@ function processCookieConsent(req, cookies) {
 
     const script = isAccepted ? cookie.onAccepted : cookie.onRevoked
     if (script) scripts.push(script)
-
-    cookie.accepted = isAccepted
   }
 
   return scripts
 }
 
-// Strips the browser script strings (onAccepted/onRevoked) so the list can be safely serialized to the client.
+// Includes onAccepted/onRevoked (plain developer-authored source strings, not derived from user input) so
+// the client can re-run the matching script itself when consent changes live, instead of duplicating logic.
 function getCookieCategories(cookies) {
-  return cookies.map(({ name, category }) => ({ name, category }))
+  return cookies.map(({ name, category, onAccepted, onRevoked }) => ({ name, category, onAccepted, onRevoked }))
 }
 
 // must be called with 'this' of the server
