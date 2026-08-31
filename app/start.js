@@ -53,7 +53,7 @@ const cookieDefinitions = [
     onAccepted: function () {},
     onRevoked: function () {},
   },
-]
+].filter(({ name }) => !name.toLowerCase().startsWith('test') || process.env.NODE_ENV === 'development')
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 async function start() {

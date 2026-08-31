@@ -27,23 +27,24 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
   if (Object.keys(whoData).length === 0) return cb(undefined)
   const prefixedData = Object.fromEntries(Object.entries(whoData).map(([key, value]) => [`who.${key}`, value]))
 
-  let consentDoc = await Consent.findOne(prefixedData)
+  try {
+    let consentDoc = await Consent.findOne(prefixedData)
 
-  if (!consentDoc) {
-    // No existing doc — build the full document in memory and create it in one operation
-    let newDoc = { who: whoData, what: {} }
-    for (const { category, isGranted, terms, services } of formattedConsentData) {
-      newDoc = Consent.modifySingleConsent(newDoc, category, isGranted, terms, services)
+    if (!consentDoc) {
+      // No existing doc — build the full document in memory and create it in one operation
+      let newDoc = { who: whoData, what: {} }
+      for (const { category, isGranted, terms, services } of formattedConsentData) {
+        newDoc = Consent.modifySingleConsent(newDoc, category, isGranted, terms, services)
+      }
+      const result = await Consent.create(newDoc)
+      if (!result) return cb(undefined)
+      return cb({ created: true })
     }
-    const result = await Consent.create(newDoc)
-    if (!result) return cb(undefined)
-    return cb({ created: true })
-  }
 
-  const updatedDoc = await Consent.updateConsent(whoData, formattedConsentData)
-  if (!updatedDoc) return cb(undefined)
+    const updatedDoc = await Consent.updateConsent(whoData, formattedConsentData)
+    if (!updatedDoc) return cb(undefined)
 
-  return cb({ created: false })
+    return cb({ created: false })
   } catch (err) {
     logger.error('saveConsent caught error:', err)
     return cb(undefined)

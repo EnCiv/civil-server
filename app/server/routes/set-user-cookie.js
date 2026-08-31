@@ -7,7 +7,21 @@ const COOKIE = {
   httpOnly: true,
 }
 
-// cookie-consent helpers were removed; the synuser cookie is strictly necessary and is not gated behind consent
+// the synuser cookie is strictly necessary and is not gated behind cookie consent
+function parseConsentCookie(consentCookie) {
+  if (!consentCookie) return undefined
+  if (typeof consentCookie === 'object') return consentCookie
+
+  try {
+    return JSON.parse(consentCookie)
+  } catch (error) {
+    try {
+      return JSON.parse(decodeURIComponent(consentCookie))
+    } catch (err) {
+      return undefined
+    }
+  }
+}
 
 // Collects the onAccepted/onRevoked script matching this request's current consent for CConsentStyleHelmet to render.
 // must be called with 'this' of the server
@@ -47,13 +61,6 @@ async function setCookieUser(req, res, next) {
   // so enciv-cookies.js can build its consent modal from real data instead of hardcoding it.
   if (req.reactProps) Object.assign(req.reactProps, { cookieCategories: getCookieCategories(this.cookies), cookieScripts })
   else req.reactProps = { cookieCategories: getCookieCategories(this.cookies), cookieScripts }
-
-
-  if (!hasRequiredCookieConsent(req)) {
-    res.clearCookie('synuser')
-    next()
-    return
-  }
 
   if (req.user) {
     cookie = { email: req.user.email, id: req.user._id, tempid: req.tempid } // the temp id is passed in the req from the temp-id route

@@ -41,6 +41,7 @@ const schema = Joi.object({
         cidr: 'optional',
       })
       .optional(),
+  })
     .or('userId', 'ipAddress')
     .min(1)
     .max(99)

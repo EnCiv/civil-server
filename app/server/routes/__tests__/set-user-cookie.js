@@ -64,8 +64,32 @@ describe('processCookieConsent', () => {
   })
 })
 
-describe('hasRequiredCookieConsent gate', () => {
-  test('clears synuser cookie when no cc_cookie is present', async () => {
+describe('synuser cookie is not gated behind cookie consent', () => {
+  test('sets synuser cookie for a logged in user even when no cc_cookie is present', async () => {
+    const context = makeContext()
+    const res = makeRes()
+    const req = makeReq(null)
+    req.user = { email: 'a@b.com', _id: 'id1' }
+
+    await setCookieUser.call(context, req, res, jest.fn())
+
+    expect(res.clearCookie).not.toHaveBeenCalled()
+    expect(res.cookie).toHaveBeenCalledWith('synuser', expect.objectContaining({ email: 'a@b.com', id: 'id1' }), expect.any(Object))
+  })
+
+  test('sets synuser cookie for a logged in user even when necessary category is not accepted', async () => {
+    const context = makeContext()
+    const res = makeRes()
+    const req = makeReq(['analytics'])
+    req.user = { email: 'a@b.com', _id: 'id1' }
+
+    await setCookieUser.call(context, req, res, jest.fn())
+
+    expect(res.clearCookie).not.toHaveBeenCalled()
+    expect(res.cookie).toHaveBeenCalledWith('synuser', expect.objectContaining({ email: 'a@b.com', id: 'id1' }), expect.any(Object))
+  })
+
+  test('clears synuser cookie when there is no logged in user and no existing synuser cookie', async () => {
     const context = makeContext()
     const res = makeRes()
 
@@ -73,28 +97,6 @@ describe('hasRequiredCookieConsent gate', () => {
 
     expect(res.clearCookie).toHaveBeenCalledWith('synuser')
     expect(res.cookie).not.toHaveBeenCalled()
-  })
-
-  test('clears synuser cookie when necessary category is not accepted', async () => {
-    const context = makeContext()
-    const res = makeRes()
-
-    await setCookieUser.call(context, makeReq(['analytics']), res, jest.fn())
-
-    expect(res.clearCookie).toHaveBeenCalledWith('synuser')
-    expect(res.cookie).not.toHaveBeenCalled()
-  })
-
-  test('does not clear synuser cookie when necessary category is accepted', async () => {
-    const context = makeContext()
-    const res = makeRes()
-    const req = makeReq(['necessary'])
-    req.user = { email: 'a@b.com', _id: 'id1' }
-
-    await setCookieUser.call(context, req, res, jest.fn())
-
-    expect(res.clearCookie).not.toHaveBeenCalled()
-    expect(res.cookie).toHaveBeenCalledWith('synuser', expect.objectContaining({ email: 'a@b.com', id: 'id1' }), expect.any(Object))
   })
 })
 
