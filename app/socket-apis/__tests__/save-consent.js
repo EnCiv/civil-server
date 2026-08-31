@@ -130,3 +130,33 @@ test('Test consent is tied to authenticated socket user id.', async () => {
     },
   })
 })
+
+test('Test consent can be tied to socket ip address when unauthenticated.', async () => {
+  const cb = jest.fn()
+  const socketWithIp = { client: { conn: { remoteAddress: '127.0.0.1' } } }
+
+  await saveConsent.call(
+    socketWithIp,
+    [
+      {
+        category: 'ConsentOptionIP',
+        isGranted: true,
+        terms: 'By consenting, you agree to consent to this agreement.',
+      },
+    ],
+    cb
+  )
+
+  expect(cb).toHaveBeenCalledTimes(1)
+  expect(cb).toHaveBeenCalledWith({ created: true })
+
+  const consentDoc = await Consent.findOne({ 'who.ipAddress': '127.0.0.1' })
+  expect(consentDoc).toMatchObject({
+    who: { ipAddress: '127.0.0.1' },
+    what: {
+      ConsentOptionIP: {
+        isGranted: true,
+      },
+    },
+  })
+})

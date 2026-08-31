@@ -33,7 +33,7 @@ function App(props) {
       <ErrorBoundary>
         <div style={{ position: 'relative' }}>
           <Helmet>
-            <title>{iota?.subject || 'Candiate Conversations'}</title>
+            <title>{iota?.subject || 'Candidate Conversations'}</title>
           </Helmet>
           <DynamicFontSizeHelmet />
           {/* if an iota is not found, it's an unusual error. do not further complicate the user experience by asking the user for cookie consent. */}

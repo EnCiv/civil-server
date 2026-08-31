@@ -1,7 +1,6 @@
 'use strict'
 const Joi = require('@hapi/joi')
-const { Mongo, Collection } = require('@enciv/mongo-collections')
-const { ObjectId } = require('mongodb')
+const { Collection } = require('@enciv/mongo-collections')
 
 /*
 The schema contains GDPR data detailing who has consented, and what they've consented to.
@@ -41,9 +40,7 @@ const schema = Joi.object({
         version: ['ipv4', 'ipv6'],
         cidr: 'optional',
       })
-      .optional()
-      .allow(''),
-  })
+      .optional(),
     .or('userId', 'ipAddress')
     .min(1)
     .max(99)
@@ -114,7 +111,8 @@ class Consent extends Collection {
         },
       }
     } else {
-      console.log('No document to update provided.')
+      logger.error('Consent.modifySingleConsent called without consentDoc')
+      return undefined
     }
   }
 

@@ -7,25 +7,7 @@ const COOKIE = {
   httpOnly: true,
 }
 
-function parseConsentCookie(consentCookie) {
-  if (!consentCookie) return undefined
-  if (typeof consentCookie === 'object') return consentCookie
-
-  try {
-    return JSON.parse(consentCookie)
-  } catch (error) {
-    try {
-      return JSON.parse(decodeURIComponent(consentCookie))
-    } catch (err) {
-      return undefined
-    }
-  }
-}
-
-function hasRequiredCookieConsent(req) {
-  const consent = parseConsentCookie(req.cookies && req.cookies.cc_cookie)
-  return !!(consent && Array.isArray(consent.categories) && consent.categories.includes('necessary'))
-}
+// cookie-consent helpers were removed; the synuser cookie is strictly necessary and is not gated behind consent
 
 // Collects the onAccepted/onRevoked script matching this request's current consent for CConsentStyleHelmet to render.
 // must be called with 'this' of the server

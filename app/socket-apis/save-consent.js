@@ -44,6 +44,10 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
   if (!updatedDoc) return cb(undefined)
 
   return cb({ created: false })
+  } catch (err) {
+    logger.error('saveConsent caught error:', err)
+    return cb(undefined)
+  }
 }
 
 export default saveConsent
