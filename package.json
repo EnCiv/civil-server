@@ -50,7 +50,7 @@
     "webpack-dev-server": "^6.0.0"
   },
   "peerDependencies": {
-    "civil-client": "github:EnCiv/civil-client#update2026"
+    "civil-client": "github:EnCiv/civil-client"
   },
   "devDependencies": {
     "@babel/cli": "^8.0.4",
