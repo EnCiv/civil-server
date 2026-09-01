@@ -10,12 +10,12 @@ function isPrivateIPv4(ip) {
 }
 
 function isHostOnLan(hostname) {
+  // Check for localhost or loopback - could be NODE_ENV production when testing before release
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true
+
   // so we can access the server from the LAN while in development - but not in production like http://192.168.1.6:3011
 
   if (process.env.NODE_ENV !== 'development') return false
-
-  // Check for localhost or loopback
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true
 
   // Check if hostname is a valid IPv4 address
   if (!net.isIP(hostname)) return false

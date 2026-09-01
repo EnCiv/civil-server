@@ -1,5 +1,6 @@
 // https://github.com/EnCiv/undebate-ssp/wiki/Send-In-Blue-Transactional
-const SibApiV3Sdk = require('sib-api-v3-sdk')
+// @getbrevo/brevo v2→v6 migration: ../../doc/brevo-v2-to-v6.md
+const { BrevoClient } = require('@getbrevo/brevo')
 const path = require('path')
 const fs = require('fs') // require so it runs as is without having to bable it
 const packageJSON = require('../../package.json')
@@ -18,14 +19,14 @@ const uniqueParams = content =>
 async function SibCreateTemplate(name, templateName, htmlContent) {
   const subject = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/)[1] || templateName
   try {
-    let smtpTemplate = new SibApiV3Sdk.CreateSmtpTemplate()
-    smtpTemplate.templateName = name
-    smtpTemplate.subject = subject
-    smtpTemplate.isActive = true
-    smtpTemplate.htmlContent = htmlContent
-    smtpTemplate.sender = { name: '[DEFAULT_FROM_NAME]', email: process.env.SENDINBLUE_DEFAULT_FROM_EMAIL }
-    smtpTemplate.replyTo = '[DEFAULT_REPLY_TO]'
-    const data = await SibSMTPApi.createSmtpTemplate(smtpTemplate)
+    const data = await SibSMTPApi.createSmtpTemplate({
+      templateName: name,
+      subject,
+      isActive: true,
+      htmlContent,
+      sender: { name: '[DEFAULT_FROM_NAME]', email: brevoDefaultFromEmail },
+      replyTo: '[DEFAULT_REPLY_TO]',
+    })
     return data?.id
   } catch (error) {
     logger.error(
@@ -80,12 +81,12 @@ export async function SibGetTemplateId(htmlFile) {
     const htmlContent = fs.readFileSync(htmlFile, 'utf8')
     if (!htmlContent) return undefined
     const templateName = path.basename(htmlFile, '.html')
-    
+
     // Extract repo name from path - find the directory just before "assets"
     const pathParts = path.normalize(htmlFile).split(path.sep)
     const assetsIndex = pathParts.findIndex(part => part === 'assets')
     const repoName = assetsIndex > 0 ? pathParts[assetsIndex - 1] : 'unknown-repo'
-    
+
     const name = repoName + '/' + templateName
     const template = await SibGetTemplate(name, htmlContent)
     if (template) return template.id
@@ -99,11 +100,9 @@ export async function SibGetTemplateId(htmlFile) {
 
 export function SibSendTransacEmail(props) {
   return new Promise((ok, ko) => {
-    let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail()
-    Object.assign(sendSmtpEmail, props)
-    SibSMTPApi.sendTransacEmail(sendSmtpEmail).then(
-      data => {
-        ok(data)
+    SibSMTPApi.sendTransacEmail({ ...props }).then(
+      body => {
+        ok(body)
       },
       error => {
         logger.error('sendTransacEmail got error', error?.message ? error.message : error, 'props:', props)
@@ -115,20 +114,25 @@ export function SibSendTransacEmail(props) {
 
 export function SibDeleteSmtpTemplate(id) {
   return new Promise((ok, ko) => {
-    SibSMTPApi.updateSmtpTemplate(id, { isActive: false }).then(() => {
-      SibSMTPApi.deleteSmtpTemplate(id).then(ok, ko)
+    SibSMTPApi.updateSmtpTemplate({ templateId: id, isActive: false }).then(() => {
+      SibSMTPApi.deleteSmtpTemplate({ templateId: id }).then(ok, ko)
     }, ko)
   })
 }
 
-if (
-  ['SENDINBLUE_API_KEY', 'SENDINBLUE_DEFAULT_FROM_EMAIL'].reduce((allExist, name) => {
-    if (!process.env[name]) {
-      logger.error('env ', name, 'not set. email sending disabled.')
-      return false
-    } else return allExist
-  }, true)
-) {
-  SibApiV3Sdk.ApiClient.instance.authentications['api-key'].apiKey = process.env.SENDINBLUE_API_KEY
-  SibSMTPApi = new SibApiV3Sdk.TransactionalEmailsApi()
+// Support both legacy SENDINBLUE_* and new BREVO_* env var names.
+// BREVO_* takes precedence if both are set.
+export const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY
+export const brevoDefaultFromEmail = process.env.BREVO_DEFAULT_FROM_EMAIL || process.env.SENDINBLUE_DEFAULT_FROM_EMAIL
+
+if (brevoApiKey && brevoDefaultFromEmail) {
+  SibSMTPApi = new BrevoClient({ apiKey: brevoApiKey }).transactionalEmails
+} else {
+  if (!brevoApiKey) logger.error('env ', 'BREVO_API_KEY (or SENDINBLUE_API_KEY)', 'not set. email sending disabled.')
+  if (!brevoDefaultFromEmail)
+    logger.error(
+      'env ',
+      'BREVO_DEFAULT_FROM_EMAIL (or SENDINBLUE_DEFAULT_FROM_EMAIL)',
+      'not set. email sending disabled.'
+    )
 }

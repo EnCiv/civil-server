@@ -2,7 +2,6 @@
 // named the-civil-server.js because web-pack-dev.js needs to IgnorePlugin it, and server.js is used many other times.  Also - IgnorePlugin - contextRegExp not working in combination with resourceRegExp
 import http from 'http'
 import express from 'express'
-import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
 import compression from 'compression'
@@ -11,30 +10,39 @@ import setUserCookie from './routes/set-user-cookie'
 import serverReactRender from './routes/server-react-render'
 import fetchHandlers from './util/fetch-handlers'
 import serverEvents from './server-events'
-import log4js from 'log4js'
+import { createLogger } from 'civil-client/app/client/logger'
+import { createMongoAppender } from './util/mongo-logger'
 import { Mongo } from '@enciv/mongo-collections'
-import mongologger from './util/mongo-logger'
 import path from 'path'
 import App from '../components/app'
 import { mergeWith } from 'lodash'
 
 if (!global.logger) {
-  log4js.configure({
-    appenders: {
-      browserMongoAppender: { type: mongologger, source: 'browser' },
-      err: { type: 'stderr' },
-      nodeMongoAppender: { type: mongologger, source: 'node' },
-    },
-    categories: {
-      browser: { appenders: ['err', 'browserMongoAppender'], level: 'debug' },
-      node: { appenders: ['err', 'nodeMongoAppender'], level: 'debug' },
-      default: { appenders: ['err'], level: 'debug' },
-    },
-  })
+  const nodeMongoAppender = createMongoAppender('node')
+  const browserMongoAppender = createMongoAppender('browser')
+
+  // ANSI codes for stderr formatting (terminals that don't support them just show the text).
+  const _Reset = '\x1b[0m'
+  const _Bright = '\x1b[1m'
+  const _FgRed = '\x1b[31m'
+  const _FgYellow = '\x1b[33m'
+  const _levelColor = { error: _FgRed + _Bright, warn: _FgYellow + _Bright }
+
+  // Write all events to stderr so they appear in server logs / Heroku logstream.
+  function createStderrAppender(source) {
+    return function stderrAppender(event) {
+      const d = event.startTime.toString().split(' ')
+      const ts = d[3] + d[1] + d[2] + ' ' + d[4]
+      const col = _levelColor[event.level] || _Bright
+      const header = `${col}${ts} ${source} ${event.level}${_Reset}`
+      const body = event.data.map(x => (typeof x === 'object' ? JSON.stringify(x, null, 2) : x)).join(' ')
+      process.stderr.write(`${header} ${body}\n`)
+    }
+  }
 
   // bslogger stands for browser socket logger - not BS logger.
-  global.bslogger = log4js.getLogger('browser')
-  global.logger = log4js.getLogger('node')
+  global.bslogger = createLogger([createStderrAppender('browser'), browserMongoAppender])
+  global.logger = createLogger([createStderrAppender('node'), nodeMongoAppender])
 }
 
 class HttpServer {
@@ -48,7 +56,6 @@ class HttpServer {
         scriptSrc: [
           "'self'",
           "'unsafe-inline'",
-          '*.fontawesome.com',
           '*.googletagmanager.com',
           'webrtc.github.io',
           '*.google-analytics.com',
@@ -56,16 +63,15 @@ class HttpServer {
         scriptSrcElem: [
           "'self'",
           "'unsafe-inline'",
-          '*.fontawesome.com',
           '*.googletagmanager.com',
           'webrtc.github.io',
           '*.google-analytics.com',
         ],
-        fontSrc: ["'self'", '*.gstatic.com', 'ka-f.fontawesome.com'],
+        fontSrc: ["'self'", '*.gstatic.com'],
         styleSrc: ["'self'", "'unsafe-inline'", '*.googleapis.com'],
         imgSrc: ["'self'", '*.cloudinary.com', 'enciv.org', '*.google-analytics.com'],
         mediaSrc: ["'self'", '*.cloudinary.com', 'blob:', 'mediastream:'],
-        connectSrc: ["'self'", 'ka-f.fontawesome.com', '*.google-analytics.com'],
+        connectSrc: ["'self'", '*.google-analytics.com'],
         frameSrc: ["'self'", 'docs.google.com'],
       },
     }
@@ -128,7 +134,7 @@ class HttpServer {
       // heroku is going to delete the MONGODB_URI var on Nov10 - we need something else to use in the mean time
       const MONGODB_URI = process.env.PRIMARYDB_URI || process.env.MONGODB_URI
       if (!MONGODB_URI) ko(new Error('Missing PRIMARYDB_URI or MONGODB_URI'))
-      await Mongo.connect(MONGODB_URI, { useUnifiedTopology: true })
+      await Mongo.connect(MONGODB_URI)
       return ok()
     })
   }
@@ -146,7 +152,7 @@ class HttpServer {
   }
 
   notFound() {
-    const serverReactRenderApp = serverReactRender.bind(this.App)
+    const serverReactRenderApp = serverReactRender.bind(null, this.App)
     this.app.use((req, res, next) => {
       res.statusCode = 404
       req.notFound = true
@@ -155,7 +161,7 @@ class HttpServer {
   }
 
   error() {
-    const serverReactRenderApp = serverReactRender.bind(this.App)
+    const serverReactRenderApp = serverReactRender.bind(null, this.App)
     this.app.use((error, req, res, next) => {
       logger.error('server caught error', error)
       res.statusCode = 500
@@ -182,12 +188,15 @@ class HttpServer {
               )
             )
           )
-        this.app.use(bodyParser.urlencoded({ extended: true }), bodyParser.json(), bodyParser.text())
+        this.app.use(express.urlencoded({ extended: true }), express.json(), express.text())
         this.app.use(cookieParser())
         this.app.use(
           '/assets/',
           express.static('assets', {
-            maxAge: process.env.NODE_ENV === 'production' ? process.env.ASSETS_MAX_AGE || 1 * 24 * 60 * 60 * 1000 : 0,
+            maxAge:
+              process.env.NODE_ENV === 'production' && !process.env.HOSTNAME.includes('localhost')
+                ? process.env.ASSETS_MAX_AGE || 1 * 24 * 60 * 60 * 1000
+                : 0,
           })
         ) // max-age in ms - 1 days these things only change through development
         this.app.enable('trust proxy')

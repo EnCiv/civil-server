@@ -1,7 +1,7 @@
 'use strict'
 
 import User from '../models/user'
-import { SibGetTemplateId, SibSendTransacEmail } from '../lib/send-in-blue-transactional'
+import { SibGetTemplateId, SibSendTransacEmail, brevoDefaultFromEmail } from '../lib/send-in-blue-transactional'
 import path from 'path'
 
 let templateId
@@ -24,7 +24,7 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
     to: [{ email: toAddress }],
     sender: {
       name: 'EnCiv.org',
-      email: process.env.SENDINBLUE_DEFAULT_FROM_EMAIL,
+      email: brevoDefaultFromEmail,
     },
     templateId,
     tags: ['reset-password'],
