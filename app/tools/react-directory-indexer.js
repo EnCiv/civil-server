@@ -98,7 +98,10 @@ function reactDirectoryIndexer(dstPath, dirPaths) {
         outString += `\t '${reactCase(handle)}':\trequire('./${path.posix.relative(dstPath, handler)}'),\n`
       }
       outString += '\n}\n'
-      const finalString = templateString.replace(/const\sComponents[\s]*=[\s]*\{([\s\S^])*?}/, outString)
+      const finalString = templateString
+        .replace(/const\sComponents[\s]*=[\s]*\{([\s\S^])*?}/, outString)
+        // dist templates have a sourceMappingURL comment from babel, but the .map file isn't shipped so drop it
+        .replace(/\n\/\/#\ssourceMappingURL=\S+\n?$/, '\n')
       await new Promise((ok, ko) => fs.writeFile(dstPath + 'index.js', finalString, err => (err ? ko(err) : ok())))
       ok()
     } catch (err) {

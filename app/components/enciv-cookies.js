@@ -1,7 +1,7 @@
 // github.com/EnCiv/civil-server/issues/61
 
 import React, { useEffect, useState, useRef } from 'react'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 import * as CookieConsent from 'vanilla-cookieconsent'
 export default EncivCookies
 
@@ -200,4 +200,3 @@ function EncivCookies(props) {
     </div>
   )
 }
-

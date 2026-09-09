@@ -1,5 +1,5 @@
 'use strict'
-const Joi = require('@hapi/joi')
+const Joi = require('joi')
 const { Collection } = require('@enciv/mongo-collections')
 
 const schema = Joi.object({
@@ -7,7 +7,7 @@ const schema = Joi.object({
   path: Joi.string(),
   subject: Joi.string().required(),
   description: Joi.string().required(),
-  webComponent: [Joi.string(), Joi.object()],
+  webComponent: Joi.alternatives().try(Joi.string(), Joi.object()),
   participants: Joi.object(),
   component: Joi.object(),
   userId: Joi.string(),

@@ -1,5 +1,5 @@
 'use strict'
-const Joi = require('@hapi/joi')
+const Joi = require('joi')
 const { Collection } = require('@enciv/mongo-collections')
 
 /*

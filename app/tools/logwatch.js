@@ -1,8 +1,22 @@
 #!/usr/bin/env node
 'use strict'
 
+import dns from 'dns'
 import Log from '../models/log'
 import { Mongo } from '@enciv/mongo-collections'
+
+// Node 20 c-ares may use a loopback DNS server (from a VPN/Docker proxy) that
+// doesn't handle mongodb+srv:// SRV queries correctly.  Mirror the fix from start.js.
+const GOOGLE_PUBLIC_DNS_PRIMARY = '8.8.8.8'
+const GOOGLE_PUBLIC_DNS_SECONDARY = '8.8.4.4'
+;(function fixLoopbackDNSForNode20() {
+  const servers = dns.getServers()
+  const nonLoopback = servers.filter(s => !s.startsWith('127.') && s !== '::1' && s !== '[::1]')
+  if (nonLoopback.length < servers.length) {
+    const fixed = nonLoopback.length > 0 ? nonLoopback : [GOOGLE_PUBLIC_DNS_PRIMARY, GOOGLE_PUBLIC_DNS_SECONDARY]
+    dns.setServers(fixed)
+  }
+})()
 
 var start = new Date()
 start.setDate(start.getDate() - 1) // start yesterday
@@ -35,11 +49,11 @@ const BgCyan = '\x1b[46m'
 const BgWhite = '\x1b[47m'
 
 const colorLevel = {
-  error: FgRed + Reverse,
-  warn: FgYellow + Reverse,
-  debug: FgCyan,
-  info: Reset,
-  trace: Reset,
+  error: FgRed + Bright,
+  warn: FgYellow + Bright,
+  debug: FgCyan + Bright,
+  info: Bright,
+  trace: Dim,
 }
 
 // fetch args from command line
@@ -71,6 +85,12 @@ for (let arg = 2; arg < argv.length; arg++) {
   }
 }
 async function main() {
+  if (!args.db) {
+    console.error('Error: no database URI provided. Pass it as: logwatch db <URI>')
+    console.error('Example: node dist/tools/logwatch.js db $MONGODB_URI')
+    console.error('(Check that $MONGODB_URI is exported in your shell, e.g. via the dbup alias)')
+    process.exit(1)
+  }
   await Mongo.connect(args.db)
   console.log('Connected to server:', args.db)
   let start = args.start
@@ -86,18 +106,16 @@ async function main() {
         console.log('\n')
       }
       logs.forEach(log => {
-        console.log(
-          colorLevel[log.level] + log.startTime.toLocaleTimeString(undefined, { timeStyle: 'short' }),
-          log.source,
-          log.level,
-          Reset,
-          JSON.stringify(log.data, null, 2)
-        )
+        const d = log.startTime.toString().split(' ')
+        const ts = d[3] + d[1] + d[2] + ' ' + d[4]
+        const header = colorLevel[log.level] + ts + ' ' + log.source + ' ' + log.level + Reset
+        const body = log.data.map(x => (typeof x === 'object' ? JSON.stringify(x, null, 2) : x)).join(' ')
+        console.log(header, body)
       })
       let date = logs[logs.length - 1].startTime
       const mill = date.getMilliseconds() + 1
       date.setMilliseconds(mill)
-      array[0].$match.startTime = date
+      array[0].$match.startTime = { $gt: date }
     } else {
       process.stdout.write('.')
       pollcount++
