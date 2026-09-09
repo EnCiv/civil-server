@@ -98,10 +98,13 @@
     "react-dom": "^19.0.0",
     "react-helmet-async": "^3.0.0",
     "react-jss": "^10.10.0",
+    "sib-api-v3-sdk": "^8.4.2",
     "sniffr": "^1.4.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "stream-browserify": "^3.0.0"
+    "stream-browserify": "^3.0.0",
+    "superagent": "^5.3.1",
+    "vanilla-cookieconsent": "^3.0.1"
   },
   "bin": {
     "do-civil": "./app/tools/do-civil.sh",
