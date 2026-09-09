@@ -9,9 +9,7 @@ export default EncivCookies
 const CConsentStyleHelmet = ({ scripts }) => (
   <Helmet
     script={
-      typeof window === 'undefined' && Array.isArray(scripts) && scripts.length
-        ? [{ type: 'text/javascript', innerHTML: scripts.join('\n') }]
-        : []
+      Array.isArray(scripts) && scripts.length ? [{ type: 'text/javascript', innerHTML: scripts.join('\n') }] : []
     }
   >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css" />
