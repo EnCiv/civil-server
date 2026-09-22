@@ -17,10 +17,18 @@ async function saveConsent(formattedConsentData, cb = () => {}) {
   let whoData = {}
   const socketUserId = this?.synuser?.id
 
-  if (socketUserId) whoData.userId = socketUserId
-
-  if (this?.client?.conn?.remoteAddress) {
-    whoData['ipAddress'] = this.client.conn.remoteAddress
+  // Authenticated users are identified solely by userId - the socket's remoteAddress is
+  // also always present, and including both would AND-match on the current IP, missing
+  // the user's existing consent doc whenever they connect from a different address.
+  if (socketUserId) {
+    whoData.userId = socketUserId
+  } else {
+    // On proxied deployments, the raw transport address is the reverse proxy's, not the
+    // client's - prefer x-forwarded-for (set by our trusted proxy) the same way the HTTP
+    // path resolves it in app/routes/get-iota.js, falling back to the raw address otherwise.
+    const forwardedFor = this?.handshake?.headers?.['x-forwarded-for']
+    const ipAddress = forwardedFor ? forwardedFor.split(',')[0].trim() : this?.client?.conn?.remoteAddress
+    if (ipAddress) whoData.ipAddress = ipAddress
   }
 
   // Must have either a user ID or IP address

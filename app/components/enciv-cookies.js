@@ -119,6 +119,9 @@ function EncivCookies(props) {
     }
 
     // Call the server to save consent to database
+    // KNOWN LIMITATION: on pages with no real socket (NO_SOCKET_IO, cc2020, undebate-stage1),
+    // window.socket is the NoSocket stub and this emit is a no-op, so consent isn't persisted there.
+    // Accepted for now since those are legacy pages - worst case is re-prompting the user later.
     window.socket.emit('save-consent', formattedConsentData, () => {
       console.log('Consent data successfully saved.')
     })
