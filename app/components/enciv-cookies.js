@@ -1,6 +1,6 @@
 // github.com/EnCiv/civil-server/issues/61
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import * as CookieConsent from 'vanilla-cookieconsent'
 export default EncivCookies
@@ -97,17 +97,13 @@ function buildConsentCategories(cookieCategories) {
 
 function EncivCookies(props) {
   const [cookie, setCookie] = useState()
-  const hasMounted = useRef(false)
   const consentCategories = buildConsentCategories(props.cookieCategories)
 
-  useEffect(() => {
-    // Prevent this running on the initial render
-    if (!hasMounted.current) {
-      hasMounted.current = true
-      return
-    }
-
-    const consent = CookieConsent.getCookie() || {}
+  // Persists an actual consent action (first choice or a later change) and runs the
+  // matching accepted/revoked scripts. Must NOT be called from onConsent, which also
+  // fires on every page load with the existing, unchanged cookie.
+  function persistConsent(cookie) {
+    const consent = cookie || {}
     const categories = Array.isArray(consent.categories) ? consent.categories : []
     const consentServices = consent.services || {}
 
@@ -130,19 +126,23 @@ function EncivCookies(props) {
     for (const { name, category, onAccepted, onRevoked } of props.cookieCategories || []) {
       runCookieScript(isCookieAccepted(categories, consentServices, category, name) ? onAccepted : onRevoked)
     }
-  }, [cookie])
+  }
 
   useEffect(() => {
     CookieConsent.run({
       onFirstConsent: cookie => {
         setCookie(cookie)
+        persistConsent(cookie)
       },
       onChange: cookie => {
         setCookie(cookie)
+        persistConsent(cookie)
       },
       onConsent: ({ cookie }) => {
         // Fires once run() has fully initialized (first consent action and every page load) -
         // calling CookieConsent.getCookie() right after run() races the library's own init.
+        // Only update local state here for rendering/debug - do not persist, since this also
+        // fires on plain page loads with no new user choice.
         setCookie(cookie)
 
         // DEBUG: log every registered cookie and whether it's currently enabled/disabled (dev only).
