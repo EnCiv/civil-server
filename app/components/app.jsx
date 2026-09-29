@@ -1,9 +1,12 @@
+// https://github.com/EnCiv/civil-server/issues/45
+
 'use strict'
 
 import React from 'react'
 import WebComponents from '../web-components'
 import Footer from './footer'
 import { ErrorBoundary } from 'civil-client'
+import EncivCookies from './enciv-cookies'
 import { Helmet } from 'react-helmet-async'
 
 const DynamicFontSizeHelmet = () => (
@@ -17,33 +20,34 @@ const DynamicFontSizeHelmet = () => (
   />
 )
 
-class App extends React.Component {
-  render() {
-    if (this.props.iota) {
-      var { iota, ...newProps } = this.props
-      Object.assign(newProps, this.props.iota)
-      return (
-        <ErrorBoundary>
-          <div style={{ position: 'relative' }}>
-            <Helmet>
-              <title>{iota?.subject || 'Candiate Conversations'}</title>
-            </Helmet>
-            <DynamicFontSizeHelmet />
-            <WebComponents key="web-component" webComponent={this.props.iota.webComponent} {...newProps} />
-            <Footer key="footer" />
-          </div>
-        </ErrorBoundary>
-      )
-    } else
-      return (
-        <ErrorBoundary>
-          <div style={{ position: 'relative' }}>
-            <div>Nothing Here</div>
-            <Footer />
-          </div>
-        </ErrorBoundary>
-      )
-  }
+function App(props) {
+  var { iota, ...newProps } = props
+
+  if (iota) {
+    Object.assign(newProps, iota)
+    return (
+      <ErrorBoundary>
+        <div style={{ position: 'relative' }}>
+          <Helmet>
+            <title>{iota?.subject || 'Candidate Conversations'}</title>
+          </Helmet>
+          <DynamicFontSizeHelmet />
+          {/* if an iota is not found, it's an unusual error. do not further complicate the user experience by asking the user for cookie consent. */}
+          <EncivCookies user={newProps.user} cookieCategories={newProps.cookieCategories} cookieScripts={newProps.cookieScripts} />
+          <WebComponents key="web-component" webComponent={iota.webComponent} {...newProps} />
+          <Footer key="footer" />
+        </div>
+      </ErrorBoundary>
+    )
+  } else
+    return (
+      <ErrorBoundary>
+        <div style={{ position: 'relative' }}>
+          <div>Nothing Here</div>
+          <Footer />
+        </div>
+      </ErrorBoundary>
+    )
 }
 
 export default App
