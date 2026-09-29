@@ -50,9 +50,6 @@
     "supertest": "^7.1.0",
     "webpack-dev-server": "^6.0.0"
   },
-  "peerDependencies": {
-    "civil-client": "github:EnCiv/civil-client"
-  },
   "devDependencies": {
     "@babel/cli": "^8.0.4",
     "@babel/core": "^8.0.1",
@@ -77,6 +74,7 @@
     "bcrypt": "^6.0.0",
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
+    "civil-client": "github:EnCiv/civil-client#semver:^0.0.21",
     "classnames": "^2.5.1",
     "compression": "^1.7.4",
     "constants-browserify": "^1.0.0",
