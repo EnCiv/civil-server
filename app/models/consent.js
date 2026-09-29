@@ -140,7 +140,7 @@ class Consent extends Collection {
     }
 
     const result = await this.findOneAndUpdate({ _id }, { $set: value }, { returnDocument: 'after' })
-    return result.value
+    return result
   }
 }
 Consent.setCollectionProps()
