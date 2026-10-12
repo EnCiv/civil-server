@@ -123,6 +123,42 @@ describe('resetPassword method', () => {
   })
 })
 
+describe('isResetTokenExpired method', () => {
+  const email = 'tokenStatusUser@email.com'
+  const activationKey = 'activationKey02'
+  const activationToken = 'activationTokenStatus'
+  const dbUser = {
+    email: email,
+    password: 'password',
+    firstName: 'Test',
+    lastName: 'User',
+    activationKey: activationKey,
+    activationToken: activationToken,
+    tokenExpirationDate: new Date(),
+  }
+
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await User.create(dbUser)
+  })
+
+  test('token not found', async () => {
+    expect(await User.isResetTokenExpired('noSuchToken')).toBe(true)
+  })
+
+  test('token found and not expired', async () => {
+    expect(await User.isResetTokenExpired(activationToken)).toBe(false)
+  })
+
+  test('token found and expired', async () => {
+    const dateNow = new Date()
+    const expiredDate = new Date().setMinutes(dateNow.getMinutes() - TOKEN_EXPIRATION_TIME_MINUTES)
+    await User.updateOne({ activationToken }, { $set: { tokenExpirationDate: expiredDate } })
+
+    expect(await User.isResetTokenExpired(activationToken)).toBe(true)
+  })
+})
+
 describe('User.validate schema (joi)', () => {
   test('accepts a valid user document', () => {
     const { error } = User.validate({ email: 'test@example.com', password: 'abc', firstName: 'A', lastName: 'B' })
