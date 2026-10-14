@@ -133,11 +133,11 @@ function EncivCookies(props) {
 
   useEffect(() => {
     CookieConsent.run({
-      onFirstConsent: cookie => {
+      onFirstConsent: ({ cookie }) => {
         setCookie(cookie)
         persistConsent(cookie)
       },
-      onChange: cookie => {
+      onChange: ({ cookie }) => {
         setCookie(cookie)
         persistConsent(cookie)
       },

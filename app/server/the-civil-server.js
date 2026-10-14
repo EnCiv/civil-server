@@ -15,6 +15,7 @@ import { createMongoAppender } from './util/mongo-logger'
 import { Mongo } from '@enciv/mongo-collections'
 import path from 'path'
 import App from '../components/app'
+import GoogleAnalyticsCookie from '../lib/google-analytics-cookie'
 import { mergeWith } from 'lodash'
 
 if (!global.logger) {
@@ -99,6 +100,7 @@ class HttpServer {
     this.serverEventsDirPaths = [path.resolve(__dirname, '../events')]
     this.socketAPIsDirPaths = [path.resolve(__dirname, '../socket-apis')]
     this.cookies = [] // array of { name, category, accepted, onAccepted, onRevoked } - onAccepted/onRevoked are JS source strings run in the browser via Helmet.
+    this.addCookie(GoogleAnalyticsCookie)
 
     this.App = App
     this.setUserCookie = setUserCookie.bind(this) // user cookie needs this context so it doesn't have to lookup users in the DB every time
@@ -115,7 +117,18 @@ class HttpServer {
   }
 
   addCookie({ name, category, onAccepted, onRevoked }) {
-    this.cookies.push({ name, category, accepted: false, onAccepted, onRevoked })
+    // Functions must be self-contained: they execute in the browser, without server closures.
+    // Keep accepting source strings for existing callers.
+    const serialize = callback => {
+      if (typeof callback !== 'function') return callback
+      let source = callback.toString()
+      // Object method shorthand needs a function keyword to be a standalone expression.
+      if (/^(async\s+)?[\w$]+\s*\([^)]*\)\s*\{/.test(source) && !/^(async\s+)?function\b/.test(source)) {
+        source = source.replace(/^(async\s+)?/, '$1function ')
+      }
+      return `(${source})();`
+    }
+    this.cookies.push({ name, category, accepted: false, onAccepted: serialize(onAccepted), onRevoked: serialize(onRevoked) })
   }
 
   addRoutesDirectory(dirPath) {

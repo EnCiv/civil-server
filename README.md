@@ -161,6 +161,36 @@ You will learn more about this as we go, but for each page on the site, you will
 
 If a user browses to a path that matches, the webComponent named will be used to render the rest of the page, and the subject and description as passed to the webComponent as props.
 
+## Cookie consent
+
+`EncivCookies` displays the consent modal using the cookies registered with the server. The default App includes it; in a custom App, render it once and pass through the server-provided props:
+
+```jsx
+import EncivCookies from 'civil-server/dist/components/enciv-cookies'
+
+// Inside your App's render:
+<EncivCookies user={props.user} cookieCategories={props.cookieCategories} cookieScripts={props.cookieScripts} />
+```
+
+Google Analytics is registered automatically. Set `GOOGLE_ANALYTICS` to your measurement ID and include `GOOGLE_ANALYTICS` in `BROWSER_ENV` so its browser callback can access it. No additional `addCookie` call is needed for Google Analytics.
+
+To register another service, call `server.addCookie` before `server.earlyStart()`:
+
+```js
+server.addCookie({
+  name: 'Example Analytics',
+  category: 'analytics',
+  onAccepted: function () {
+    // Load or enable this service in the browser.
+  },
+  onRevoked: function () {
+    // Stop this service and remove its cookies in the browser.
+  },
+})
+```
+
+`addCookie` stringifies the callbacks for browser execution; they must be self-contained and cannot reference server variables or imports. Existing JavaScript source strings are also supported. The matching callback runs for the saved consent on page load and when consent changes, so callbacks should tolerate repeated calls. The modal currently supports `analytics` and `necessary` categories; `necessary` cannot be disabled.
+
 # Socket API Directory
 
 Each file in the directory represents an api call. The root of the name of the file (eg socketlogger of socketlogger.js) is the name of the socket.io event that corresponding to the api. The paramaters of the api are determined by the definition of the function.
