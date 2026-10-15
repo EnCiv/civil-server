@@ -52,7 +52,7 @@ async function start() {
   try {
     const server = new theCivilServer()
     server.App = App
-    // onAccepted/onRevoked run in the browser (via CConsentStyleHelmet), not on the server.
+    // onAccepted/onRevoked run in the browser (via the inline cookie handler registry), not on the server.
     for (const cookie of cookieDefinitions) server.addCookie(cookie)
     await server.earlyStart()
     await server.start()

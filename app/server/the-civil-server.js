@@ -16,6 +16,8 @@ import { Mongo } from '@enciv/mongo-collections'
 import path from 'path'
 import App from '../components/app'
 import GoogleAnalyticsCookie from '../lib/google-analytics-cookie'
+import SynuserCookie from '../lib/synuser-cookie'
+import CookiePreferencesCookie from '../lib/cookie-preferences-cookie'
 import { mergeWith } from 'lodash'
 
 if (!global.logger) {
@@ -99,8 +101,10 @@ class HttpServer {
     this.routesDirPaths = [path.resolve(__dirname, '../routes')]
     this.serverEventsDirPaths = [path.resolve(__dirname, '../events')]
     this.socketAPIsDirPaths = [path.resolve(__dirname, '../socket-apis')]
-    this.cookies = [] // array of { name, category, accepted, onAccepted, onRevoked } - onAccepted/onRevoked are JS source strings run in the browser via Helmet.
+    this.cookies = [] // array of { name, category, accepted, onAccepted, onRevoked } - onAccepted/onRevoked are JS source strings run in the browser via the inline handler registry.
     this.addCookie(GoogleAnalyticsCookie)
+    this.addCookie(SynuserCookie)
+    this.addCookie(CookiePreferencesCookie)
 
     this.App = App
     this.setUserCookie = setUserCookie.bind(this) // user cookie needs this context so it doesn't have to lookup users in the DB every time
@@ -116,7 +120,7 @@ class HttpServer {
     })
   }
 
-  addCookie({ name, category, onAccepted, onRevoked }) {
+  addCookie({ name, category, description, privacyUrl, onAccepted, onRevoked }) {
     // Functions must be self-contained: they execute in the browser, without server closures.
     // Keep accepting source strings for existing callers.
     const serialize = callback => {
@@ -128,7 +132,7 @@ class HttpServer {
       }
       return `(${source})();`
     }
-    this.cookies.push({ name, category, accepted: false, onAccepted: serialize(onAccepted), onRevoked: serialize(onRevoked) })
+    this.cookies.push({ name, category, description, privacyUrl, accepted: false, onAccepted: serialize(onAccepted), onRevoked: serialize(onRevoked) })
   }
 
   addRoutesDirectory(dirPath) {

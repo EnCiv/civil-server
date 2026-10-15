@@ -11,7 +11,15 @@ test('registers Google Analytics by default without executing browser callbacks'
   const on = jest.spyOn(process, 'on').mockReturnValue(process)
   try {
     const server = new HttpServer()
-    expect(server.cookies).toHaveLength(1)
+    expect(server.cookies).toHaveLength(3)
+    expect(server.cookies.find(cookie => cookie.name === 'Cookie preferences (cc_cookie)')).toMatchObject({
+      category: 'necessary', onAccepted: undefined, onRevoked: undefined,
+    })
+    const synuser = server.cookies.find(cookie => cookie.category === 'necessary')
+    expect(synuser.name).toBe('Participant identification (synuser)')
+    expect(synuser.description).toContain('14 days')
+    expect(synuser.onAccepted).toBeUndefined()
+    expect(synuser.onRevoked).toBeUndefined()
     expect(server.cookies[0]).toMatchObject({ name: 'Google Analytics', category: 'analytics', accepted: false })
     expect(typeof server.cookies[0].onAccepted).toBe('string')
     expect(typeof server.cookies[0].onRevoked).toBe('string')

@@ -29,7 +29,7 @@ describe('processCookieConsent', () => {
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).toContain('ACCEPT_SCRIPT')
+    expect(req.cookieScripts).toContain('ACCEPT_SCRIPT')
   })
 
   test('collects the onRevoked script when category is not accepted', async () => {
@@ -38,7 +38,7 @@ describe('processCookieConsent', () => {
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).toContain('REVOKE_SCRIPT')
+    expect(req.cookieScripts).toContain('REVOKE_SCRIPT')
   })
 
   test('does not collect the onAccepted script when no consent cookie is present', async () => {
@@ -47,7 +47,7 @@ describe('processCookieConsent', () => {
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).not.toContain('ACCEPT_SCRIPT')
+    expect(req.cookieScripts).not.toContain('ACCEPT_SCRIPT')
   })
 
   test('handles multiple cookies across different categories independently', async () => {
@@ -60,7 +60,7 @@ describe('processCookieConsent', () => {
     // analytics accepted, marketing revoked
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).toEqual(expect.arrayContaining(['GA_ACCEPT', 'ADS_REVOKE']))
+    expect(req.cookieScripts).toEqual(expect.arrayContaining(['GA_ACCEPT', 'ADS_REVOKE']))
   })
 })
 
@@ -123,7 +123,7 @@ describe('processCookieConsent — per-service individual control', () => {
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).toContain('GA_ACCEPT')
+    expect(req.cookieScripts).toContain('GA_ACCEPT')
   })
 
   test('does not accept a cookie whose name is absent from services even if category is accepted', async () => {
@@ -132,7 +132,7 @@ describe('processCookieConsent — per-service individual control', () => {
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).not.toContain('MIXPANEL_ACCEPT')
+    expect(req.cookieScripts).not.toContain('MIXPANEL_ACCEPT')
   })
 
   test('two cookies in same category toggle independently via services', async () => {
@@ -145,7 +145,7 @@ describe('processCookieConsent — per-service individual control', () => {
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).toEqual(expect.arrayContaining(['GA_ACCEPT', 'MIXPANEL_REVOKE']))
+    expect(req.cookieScripts).toEqual(expect.arrayContaining(['GA_ACCEPT', 'MIXPANEL_REVOKE']))
   })
 
   test('falls back to category-level check when no services are listed for a category', async () => {
@@ -155,6 +155,6 @@ describe('processCookieConsent — per-service individual control', () => {
 
     await setCookieUser.call(context, req, makeRes(), jest.fn())
 
-    expect(req.reactProps.cookieScripts).toContain('GA_ACCEPT')
+    expect(req.cookieScripts).toContain('GA_ACCEPT')
   })
 })

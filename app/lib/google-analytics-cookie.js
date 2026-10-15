@@ -2,6 +2,10 @@
 const GoogleAnalyticsCookie = {
   name: 'Google Analytics',
   category: 'analytics',
+  description:
+    'Google Analytics cookies (_ga and _ga_*) help us understand how visitors use our website so we can improve it. ' +
+    'They distinguish visitors and maintain session information. Google lists a default expiry of two years; the actual expiry may be shorter depending on our settings and your browser.',
+  privacyUrl: 'https://policies.google.com/technologies/partner-sites',
   onAccepted: function () {
     if (!window.process || !window.process.env || !window.process.env.GOOGLE_ANALYTICS) return
     window['ga-disable-' + window.process.env.GOOGLE_ANALYTICS] = false

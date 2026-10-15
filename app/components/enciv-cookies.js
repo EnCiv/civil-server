@@ -3,30 +3,24 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import * as CookieConsent from 'vanilla-cookieconsent'
+import { COOKIE_PREFERENCES_EXPIRY_DAYS } from '../lib/cookie-preferences-cookie'
 export default EncivCookies
 
-// scripts (acceptedScript/revokedScript from server.addCookie) only need to run once, on the server render.
-const CConsentStyleHelmet = ({ scripts }) => (
-  <Helmet
-    script={
-      Array.isArray(scripts) && scripts.length ? [{ type: 'text/javascript', innerHTML: scripts.join('\n') }] : []
-    }
-  >
+const CConsentStyleHelmet = () => (
+  <Helmet>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css" />
+    <style>{`
+      #cc-main .pm__service { align-items: flex-start; padding-top: .8em; padding-bottom: .8em; }
+      #cc-main .pm__service-header { align-items: flex-start; }
+      #cc-main .pm__service-icon { margin-top: .45em; }
+      #cc-main .toggle-service { flex-shrink: 0; margin-top: .2em; }
+      #cc-main .enciv-cookie-description { display: block; margin-top: .4em; font-weight: normal; line-height: 1.5; }
+    `}</style>
   </Helmet>
 )
 
-// Runs a registered cookie's onAccepted/onRevoked source string (see server.addCookie) the same way
-// the server-rendered Helmet <script> does, so live consent changes don't need duplicate hardcoded logic.
-function runCookieScript(script) {
-  if (!script) return
-  const el = document.createElement('script')
-  el.text = script
-  document.head.appendChild(el)
-  el.remove()
-}
-
 function isCookieAccepted(categories, services, category, name) {
+  if (category === 'necessary') return true
   const categoryServices = services[category]
   return Array.isArray(categoryServices) ? categoryServices.includes(name) : categories.includes(category)
 }
@@ -43,7 +37,7 @@ const modalSections = {
   analytics: {
     title: 'Performance and Analytics',
     description:
-      'These cookies collect information about how you use our website. All of the data is anonymized and cannot be used to identify you.',
+      'These optional cookies help us understand how visitors use our website so we can improve it.',
     linkedCategory: 'analytics',
   },
 }
@@ -65,13 +59,19 @@ but this is the object structure for displaying individual services.
     ...
 }
 */
+// Service labels support HTML; names and descriptions remain plain-text metadata.
+const escapeHtml = text => text.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
+
 function buildConsentCategories(cookieCategories) {
   // Group the registered cookies by category
   const services = { necessary: [] }
-  for (const { name, category } of cookieCategories || []) {
+  for (const { name, category, description, privacyUrl } of cookieCategories || []) {
     if (!services[category]) services[category] = []
     services[category].push({
-      label: name,
+      name,
+      label: escapeHtml(name) + (description ? `<span class="enciv-cookie-description">${escapeHtml(description)}${privacyUrl && /^https:\/\//i.test(privacyUrl)
+        ? ` <a href="${escapeHtml(privacyUrl)}" target="_blank" rel="noopener noreferrer">Learn how your information is used</a>.`
+        : ''}</span>` : ''),
       onAccept: () => {},
       onReject: () => {},
     })
@@ -82,7 +82,8 @@ function buildConsentCategories(cookieCategories) {
   for (const key of Object.keys(modalSections)) {
     consentCategories[key] = {
       services: (services[key] || []).reduce((result, service) => {
-        result[service.label] = { ...service }
+        const { name, ...config } = service
+        result[name] = config
         return result
       }, {}),
     }
@@ -98,7 +99,6 @@ function buildConsentCategories(cookieCategories) {
 function EncivCookies(props) {
   const [cookie, setCookie] = useState()
   const consentCategories = buildConsentCategories(props.cookieCategories)
-
   // Persists an actual consent action (first choice or a later change) and runs the
   // matching accepted/revoked scripts. Must NOT be called from onConsent, which also
   // fires on every page load with the existing, unchanged cookie.
@@ -126,13 +126,16 @@ function EncivCookies(props) {
       console.log('Consent data successfully saved.')
     })
 
-    for (const { name, category, onAccepted, onRevoked } of props.cookieCategories || []) {
-      runCookieScript(isCookieAccepted(categories, consentServices, category, name) ? onAccepted : onRevoked)
+    for (const { id, name, category } of props.cookieCategories || []) {
+      const handlers = window.encivCookieHandlers?.[id]
+      const callback = isCookieAccepted(categories, consentServices, category, name) ? handlers?.onAccepted : handlers?.onRevoked
+      callback?.()
     }
   }
 
   useEffect(() => {
     CookieConsent.run({
+      cookie: { expiresAfterDays: COOKIE_PREFERENCES_EXPIRY_DAYS },
       onFirstConsent: ({ cookie }) => {
         setCookie(cookie)
         persistConsent(cookie)
@@ -185,7 +188,7 @@ function EncivCookies(props) {
                 {
                   title: 'More information',
                   description:
-                    'For any queries in relation to my policy on cookies and your choices, please <a href="#contact-page">contact us</a>',
+                    'For any questions about our cookie policy and your choices, please contact us at <a href="mailto:contact@enciv.org">contact@enciv.org</a>.',
                 },
               ],
             },
@@ -197,7 +200,7 @@ function EncivCookies(props) {
 
   return (
     <div>
-      <CConsentStyleHelmet scripts={props.cookieScripts} />
+      <CConsentStyleHelmet />
     </div>
   )
 }

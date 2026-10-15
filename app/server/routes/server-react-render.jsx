@@ -16,6 +16,7 @@ const createStableGenerateId = () => {
 }
 import cloneDeep from 'lodash/cloneDeep'
 import { HelmetProvider } from 'react-helmet-async'
+import cookieHandlersScript from '../util/cookie-handlers-script'
 
 // extract meta tags from the web component
 const metaTags = (props, req, res) =>
@@ -111,6 +112,7 @@ function serverReactRender(App, req, res, next) {
                         return browserEnv
                       })()
                     )})</script>
+                    <script>${cookieHandlersScript(req.cookieHandlers, req.cookieScripts)}</script>
                 </head>
                 <body style="margin: 0; padding: 0">
                     <div id="synapp">${body}</div>
