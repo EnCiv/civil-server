@@ -29,11 +29,31 @@ const GOOGLE_PUBLIC_DNS_SECONDARY = '8.8.4.4'
 
 Iota.preload(iotas)
 
+// Register non-essential cookies here so enciv-cookies.js can build its consent modal from this list
+// instead of hardcoding it - see app/components/enciv-cookies.js
+// addCookie serializes these browser-only callbacks.
+const cookieDefinitions = [
+  {
+    name: 'Test Cookie 1',
+    category: 'analytics',
+    onAccepted: function () {},
+    onRevoked: function () {},
+  },
+  {
+    name: 'Test Cookie 2',
+    category: 'analytics',
+    onAccepted: function () {},
+    onRevoked: function () {},
+  },
+].filter(({ name }) => !name.toLowerCase().startsWith('test') || process.env.NODE_ENV === 'development')
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 async function start() {
   try {
     const server = new theCivilServer()
     server.App = App
+    // onAccepted/onRevoked run in the browser (via the inline cookie handler registry), not on the server.
+    for (const cookie of cookieDefinitions) server.addCookie(cookie)
     await server.earlyStart()
     await server.start()
     logger.info('started')

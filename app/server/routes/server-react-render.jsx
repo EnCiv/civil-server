@@ -16,18 +16,7 @@ const createStableGenerateId = () => {
 }
 import cloneDeep from 'lodash/cloneDeep'
 import { HelmetProvider } from 'react-helmet-async'
-
-const googleAnalytics = (props, req, res) =>
-  process.env.GOOGLE_ANALYTICS
-    ? `<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', '${process.env.GOOGLE_ANALYTICS}');
-</script>`
-    : ''
+import cookieHandlersScript from '../util/cookie-handlers-script'
 
 // extract meta tags from the web component
 const metaTags = (props, req, res) =>
@@ -123,6 +112,7 @@ function serverReactRender(App, req, res, next) {
                         return browserEnv
                       })()
                     )})</script>
+                    <script>${cookieHandlersScript(req.cookieHandlers, req.cookieScripts)}</script>
                 </head>
                 <body style="margin: 0; padding: 0">
                     <div id="synapp">${body}</div>
@@ -139,7 +129,6 @@ function serverReactRender(App, req, res, next) {
 }
 
 serverReactRender.head = []
-serverReactRender.head.push(googleAnalytics)
 serverReactRender.head.push(metaTags)
 
 export default serverReactRender
