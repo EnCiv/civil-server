@@ -24,7 +24,7 @@ flow.
 `activationKey` come straight from an unauthenticated socket call with no
 sanitization layer in front of it (see `app/server/socket-api.js`). Passing a
 non-string (e.g. `{ $regex: '^a' }`) straight into `User.findOne(...)` is a
-NoSQL injection / token-probing risk. Both `isResetTokenExpired` and
+NoSQL injection / token-probing risk. Both `checkResetToken` and
 `resetPassword` must reject non-string/empty inputs before querying Mongo.
 
 > **Q (Justin B. Yee):** We do this validation in multiple areas for
@@ -33,11 +33,12 @@ NoSQL injection / token-probing risk. Both `isResetTokenExpired` and
 > this check rather than doing it by equality in each function?
 >
 > **A:** Yes. As written, the plan already duplicates the same
-> `typeof x !== 'string' || !x` check across `isResetTokenExpired` and
+> `typeof x !== 'string' || !x` check across `checkResetToken` and
 > `resetPassword` (3 call sites total). Extract it into a single helper, e.g.
 > `app/lib/is-valid-reset-token.js`:
 > ```js
-> // tokens/keys are base64url(randomString(12)) — restrict to that charset, not just "truthy string"
+> // tokens/keys are base64url(randomString(12)), which is 16 chars of [A-Za-z0-9_-].
+// Restrict to that charset (not a fixed length, in case legacy tokens differ), not just "truthy string"
 > const RESET_TOKEN_PATTERN = /^[A-Za-z0-9_-]+$/
 >
 > export function isValidResetToken(value) {
@@ -45,7 +46,8 @@ NoSQL injection / token-probing risk. Both `isResetTokenExpired` and
 > }
 > ```
 > That gives one place to tighten the rule later (e.g. enforcing the exact
-> length produced by `base64url(randomString(12))`) instead of updating three
+> 16-char length produced by `base64url(randomString(12))`, once we're sure no
+> legacy tokens differ) instead of updating three
 > call sites and risking one getting missed. Both `app/models/user.js`
 > snippets below should call `isValidResetToken(...)` instead of the inline
 > `typeof`/truthy check.
@@ -83,9 +85,9 @@ wrong" code.
 ## Server changes (civil-server)
 
 1. **`app/lib/reset-password-messages.js`** (new) — single source of truth
-   mapping `code -> message`:
+   mapping `code -> message` (uses `export`, matching the other `app/lib` files):
    ```js
-   module.exports = {
+   export default {
      INVALID_RESET_KEY: 'This reset key is not valid. Please check your email and try again.',
      RESET_KEY_EXPIRED: 'This reset key has expired. Please request a new password reset email.',
      GENERIC_RESET_ERROR: 'An unknown error occurred while resetting your password. Please try again or contact support.',
@@ -93,10 +95,11 @@ wrong" code.
    ```
 
 2. **`app/lib/is-valid-reset-token.js`** (new) — shared input-validation helper
-   (see Q&A above), used by both `resetPassword` and `isResetTokenExpired`
+   (see Q&A above), used by both `resetPassword` and `checkResetToken`
    instead of each duplicating the same inline check:
    ```js
-   // tokens/keys are base64url(randomString(12)) — restrict to that charset, not just "truthy string"
+   // tokens/keys are base64url(randomString(12)), which is 16 chars of [A-Za-z0-9_-].
+// Restrict to that charset (not a fixed length, in case legacy tokens differ), not just "truthy string"
    const RESET_TOKEN_PATTERN = /^[A-Za-z0-9_-]+$/
 
    export function isValidResetToken(value) {
@@ -137,12 +140,16 @@ wrong" code.
 
    Also update `User.isResetTokenExpired` to the same pattern — reject
    invalid input via the same helper, and return a `code` so the precheck can
-   tell "never a valid token" apart from "was valid, now expired":
+   tell "never a valid token" apart from "was valid, now expired". Since it no
+   longer returns a boolean, rename it to `User.checkResetToken` (update
+   `app/socket-apis/check-reset-token.js` and tests accordingly). A missing
+   `tokenExpirationDate` is `INVALID_RESET_KEY` here, exactly as in
+   `resetPassword`, so both paths agree for the same record:
    ```js
-   static async isResetTokenExpired(activationToken) {
+   static async checkResetToken(activationToken) {
      if (!isValidResetToken(activationToken)) return { expired: true, code: 'INVALID_RESET_KEY' }
      const user = await User.findOne({ activationToken })
-     if (!user) return { expired: true, code: 'INVALID_RESET_KEY' }
+     if (!user || !user.tokenExpirationDate) return { expired: true, code: 'INVALID_RESET_KEY' }
      const expired = User.isTokenExpirationDateExpired(user.tokenExpirationDate)
      return { expired, code: expired ? 'RESET_KEY_EXPIRED' : undefined }
    }
@@ -191,7 +198,7 @@ wrong" code.
    ```js
    async function checkResetToken(activationToken, cb) {
      try {
-       const { expired, code } = await User.isResetTokenExpired(activationToken)
+       const { expired, code } = await User.checkResetToken(activationToken)
        cb({ success: true, expired, code, message: code && messages[code] })
      } catch (error) {
        logger.error('unexpected error checking reset token: ', error.toString())
@@ -201,14 +208,27 @@ wrong" code.
    ```
 
 6. **`app/web-components/reset-password.js`** — update the `check-reset-token`
-   callback to read the new response shape, keeping `code`/`message` around so
-   they can be passed down to the client component:
+   callback to read the new response shape, declare the state, pass the
+   message down, and render the expired state in this wrapper (no form) so
+   this PR is correct on its own without waiting for a civil-client merge and
+   dependency bump. The wrapper branch can be dropped once civil-client
+   handles the `expired` prop itself:
    ```js
+   const [expired, setExpired] = useState(false)
+   const [expiredMessage, setExpiredMessage] = useState('')
+
    window.socket.emit('check-reset-token', activationToken, response => {
      if (!response.success) return console.error('check-reset-token failed:', response.message)
      setExpired(!!response.expired)
      setExpiredMessage(response.message || '')
    })
+
+   // render
+   {expired ? (
+     <div className={classes.expired}>{expiredMessage}</div>
+   ) : (
+     <ClientResetPassword activationToken={...} returnTo={...} expired={expired} message={expiredMessage} />
+   )}
    ```
 
 7. **Tests**
@@ -218,9 +238,15 @@ wrong" code.
    - `app/models/__tests__/user.js`: replace `.rejects.toThrow(...)` expectations
      for `resetPassword` with assertions on the returned `{ success, code }`
      object (not-found, expired, success, and invalid-input cases). Add
-     `isResetTokenExpired` cases for object/non-string input (e.g.
+     `checkResetToken` cases for object/non-string input (e.g.
      `{ $regex: '^a' }`) to confirm it returns `INVALID_RESET_KEY` without
      querying Mongo.
+   - Update the existing `isResetTokenExpired` assertions in
+     `app/models/__tests__/user.js` (now `checkResetToken`): they currently
+     expect a boolean and must expect `{ expired, code }`, including the
+     missing-`tokenExpirationDate` case returning `INVALID_RESET_KEY`.
+   - Socket-handler test with an object-valued token (e.g.
+     `{ $regex: '^a' }`) asserting `User.findOne` is never called.
    - New `app/socket-apis/__tests__/reset-password.js` and
      `check-reset-token.js`: assert the exact JSON shape passed to `cb()` for
      each case, including the unexpected-error path, **and assert `cb` is
@@ -242,6 +268,9 @@ that `civil-server`'s `peerDependencies.civil-client` currently resolves to
 `civil-client@0.0.21` (pre-dates civil-client#15) — editing the local
 civil-client checkout has no effect on civil-server's real install until
 civil-client#15 is merged and that dependency is bumped to the new commit/tag.
+
+The server wrapper renders the expired state itself (server step 6), so
+users see it before civil-client#15 lands.
 
 ## Client changes (civil-client)
 
