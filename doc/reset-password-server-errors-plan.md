@@ -38,7 +38,7 @@ NoSQL injection / token-probing risk. Both `checkResetToken` and
 > `app/lib/is-valid-reset-token.js`:
 > ```js
 > // tokens/keys are base64url(randomString(12)), which is 16 chars of [A-Za-z0-9_-].
-// Restrict to that charset (not a fixed length, in case legacy tokens differ), not just "truthy string"
+   // Restrict to that charset (not a fixed length, in case legacy tokens differ), not just "truthy string"
 > const RESET_TOKEN_PATTERN = /^[A-Za-z0-9_-]+$/
 >
 > export function isValidResetToken(value) {
@@ -222,6 +222,8 @@ wrong" code.
      setExpired(!!response.expired)
      setExpiredMessage(response.message || '')
    })
+
+   // add an `expired` rule to the wrapper's useStyles (it doesn't exist today)
 
    // render
    {expired ? (
