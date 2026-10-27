@@ -7,15 +7,24 @@ import { ResetPassword as ClientResetPassword } from 'civil-client'
 function ResetPassword() {
   const classes = useStyles()
   const [params, setParams] = useState(null)
+  const [expired, setExpired] = useState(false)
 
   useEffect(() => {
-    setParams(new URLSearchParams(document.location.search))
+    const urlParams = new URLSearchParams(document.location.search)
+    setParams(urlParams)
+    const activationToken = urlParams.get('t')
+    if (activationToken && window.socket) {
+      window.socket.emit('check-reset-token', activationToken, (error, expired) => {
+        if (error) return console.error('check-reset-token failed:', error)
+        setExpired(!!expired)
+      })
+    }
   }, [])
 
   return (
     <div className={classes.wrapper}>
       <div className={classes.centeredWrapper}>
-        <ClientResetPassword activationToken={params?.get('t') || ''} returnTo={params?.get('p') || ''} />
+        <ClientResetPassword activationToken={params?.get('t') || ''} returnTo={params?.get('p') || ''} expired={expired} />
       </div>
     </div>
   )

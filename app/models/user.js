@@ -96,12 +96,24 @@ class User extends Collection {
     return result
   }
 
+  static isTokenExpirationDateExpired(tokenExpirationDate) {
+    if (!tokenExpirationDate) return true
+    const tokenExpirationTime = new Date(tokenExpirationDate).getTime() + TOKEN_EXPIRATION_TIME_MINUTES * 60 * 1000
+    return tokenExpirationTime < new Date().getTime()
+  }
+
+  // looks up by token alone (no key) so the reset-password page can show expiry status before the user enters the key
+  static async isResetTokenExpired(activationToken) {
+    const user = await User.findOne({ activationToken })
+    if (!user) return true
+    return User.isTokenExpirationDateExpired(user.tokenExpirationDate)
+  }
+
   static async resetPassword(activationToken, activationKey, newPassword) {
     const user = await User.findOne({ activationToken, activationKey })
     if (!user) throw new Error('resetPassword - user not found')
-    if (!user.tokenExpirationDate) throw new Error('resetPassword - tokenExpirationDate missin')
-    const tokenExpirationTime = new Date(user.tokenExpirationDate).getTime() + TOKEN_EXPIRATION_TIME_MINUTES * 60 * 1000
-    if (tokenExpirationTime < new Date().getTime()) {
+    if (!user.tokenExpirationDate) throw new Error('resetPassword - tokenExpirationDate missing')
+    if (User.isTokenExpirationDateExpired(user.tokenExpirationDate)) {
       throw new Error('token expired')
     }
     const hash = await bcrypt.hash(newPassword, 10)
