@@ -138,10 +138,20 @@ documented rather than changed.
      return { success: true }
    }
    ```
+   `@enciv/mongo-collections` exposes the driver's collection methods
+   directly, so `updateOne` returns the native `UpdateResult` with
+   `matchedCount`. Nothing in this repo reads that result today, so the
+   success-path test (user's password actually changes) is what proves it.
+   The hash is deliberately computed *after* the cheap `findOne` check, not
+   before a single `findOneAndUpdate`: hashing first would let anyone sending
+   well-formed but bogus tokens force a bcrypt computation per request. Only
+   the losing racer in a true race wastes a hash.
    > **Note:** validation is delegated to `isValidResetToken()` rather than
    > repeating `typeof x !== 'string' || !x` inline, so tightening the rule
    > later only requires editing one file. The password check comes after the
-   > token/key format checks and before any DB access, so it reveals nothing
+   > token/key format checks and before any DB access. It is a server-side
+   > backstop only: the client already blocks empty passwords, so civil-client
+   > needs no change for it. It reveals nothing
    > about whether a token exists.
 
    No `throw` for the "not found" / "missing" / "expired" / "bad input" cases.
@@ -244,6 +254,7 @@ documented rather than changed.
      if (!activationToken || !window.socket) return setCheck({ expired: false })
 
      let settled = false
+     let timer
      const settle = result => {
        if (settled) return // first outcome wins; late callbacks and unmount are ignored
        settled = true
@@ -251,13 +262,13 @@ documented rather than changed.
        setCheck(result)
      }
      // precheck failed or timed out: show the form anyway, reset-password re-validates on submit
-     const timer = setTimeout(() => {
+     timer = setTimeout(() => {
        console.error('check-reset-token timed out')
        settle({ expired: false })
      }, PRECHECK_TIMEOUT_MS)
      window.socket.emit('check-reset-token', activationToken, response => {
-       if (!response.success) {
-         console.error('check-reset-token failed:', response.message)
+       if (!response?.success) {
+         console.error('check-reset-token failed:', response?.message)
          return settle({ expired: false })
        }
        settle({ expired: !!response.expired, message: response.message })
@@ -320,20 +331,26 @@ documented rather than changed.
      `@testing-library/react`, jest fake timers, `jest.mock('civil-client')`
      for `ResetPassword`, a stub `window.socket.emit`): placeholder shown
      while pending; form after a non-expired result; expired message after an
-     expired result (and no form); form after `success: false`; form after the
-     5s timeout with the timeout logged; a result arriving after the timeout
-     is ignored; no token in the URL shows the form without emitting.
+     expired result (and no form); form after `success: false`; form after a
+     `null`/`undefined` response (no throw); form after the 5s timeout with the
+     timeout logged; a result arriving after the timeout is ignored; no state
+     update (no React warning) if unmounted before the callback fires; no
+     token in the URL shows the form without emitting.
    - `cypress/integration/02-reset-password.spec.js`: the "Bad Reset Key" case
      asserts the old text ("Error resetting password, please try again or
      contact support"); update it to the new `INVALID_RESET_KEY` message
-     ("This reset key is not valid..."). Add an expired-token case (seed
-     `tokenExpirationDate` more than 10 minutes in the past) that expects the
-     expired message and no form.
-   - Socket-handler test with an object-valued token (e.g.
-     `{ $regex: '^a' }`) asserting `User.findOne` is never called.
+     ("This reset key is not valid..."). Add an expired-token case that
+     expects the expired message and no form. No new seeding helper is
+     needed: the spec's `insertUser` goes through `mongo --eval` with
+     `JSON.stringify`, so a `Date` is stored as an ISO string, which
+     `isTokenExpirationDateExpired` parses with `new Date(...)`. Seed
+     `tokenExpirationDate: new Date(Date.now() - 11 * 60 * 1000)` the same way
+     (the expiry window is 10 minutes).
    - New `app/socket-apis/__tests__/reset-password.js` and
      `check-reset-token.js`: assert the exact JSON shape passed to `cb()` for
-     each case, including the unexpected-error path, **and assert `cb` is
+     each case, including the unexpected-error path and an object-valued token
+     (e.g. `{ $regex: '^a' }`) that must produce `INVALID_RESET_KEY` with
+     `User.findOne` never called, **and assert `cb` is
      called exactly once per request** (regression test for the existing
      double-`cb()` bug).
    - Confirmed via grep: the only caller of `reset-password` is

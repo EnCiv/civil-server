@@ -1,14 +1,15 @@
 'use strict'
 
 import User from '../models/user'
+import messages from '../lib/reset-password-messages'
 
 async function checkResetToken(activationToken, cb) {
   try {
-    const expired = await User.isResetTokenExpired(activationToken)
-    cb(null, expired)
+    const { expired, code } = await User.checkResetToken(activationToken)
+    cb({ success: true, expired, code, message: code && messages[code] })
   } catch (error) {
-    logger.error('error checking reset token: ', error.toString())
-    cb(error.toString())
+    logger.error('unexpected error checking reset token: ', error.toString())
+    cb({ success: false, code: 'GENERIC_RESET_ERROR', message: messages.GENERIC_RESET_ERROR })
   }
 }
 

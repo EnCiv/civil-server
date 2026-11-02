@@ -84,36 +84,89 @@ describe('resetPassword method', () => {
     activationToken: activationToken,
     tokenExpirationDate: new Date(),
   }
+  const EXPIRED_DATE = () => new Date(Date.now() - (TOKEN_EXPIRATION_TIME_MINUTES + 1) * 60 * 1000)
   let user
 
   beforeEach(async () => {
     await User.deleteMany({})
-    user = await User.create(dbUser)
+    // User.create replaces .password with its hash on the object it is given, so pass a copy
+    user = await User.create({ ...dbUser })
   })
 
   test('token expired', async () => {
-    const dateNow = new Date()
-    const expiredDate = new Date().setMinutes(dateNow.getMinutes() - TOKEN_EXPIRATION_TIME_MINUTES)
-    User.updateOne(
-      { activationKey, activationToken },
-      {
-        $set: {
-          tokenExpirationDate: expiredDate,
-        },
-      }
-    )
+    await User.updateOne({ activationKey, activationToken }, { $set: { tokenExpirationDate: EXPIRED_DATE() } })
 
-    await expect(async () => {
-      await User.resetPassword(activationToken, activationKey, 'newPassword')
-    }).rejects.toThrow(new Error('token expired'))
+    expect(await User.resetPassword(activationToken, activationKey, 'newPassword')).toEqual({
+      success: false,
+      code: 'RESET_KEY_EXPIRED',
+    })
+  })
+
+  test('token not found', async () => {
+    expect(await User.resetPassword('noSuchToken', activationKey, 'newPassword')).toEqual({
+      success: false,
+      code: 'INVALID_RESET_KEY',
+    })
+  })
+
+  test('key does not match', async () => {
+    expect(await User.resetPassword(activationToken, 'wrongKey', 'newPassword')).toEqual({
+      success: false,
+      code: 'INVALID_RESET_KEY',
+    })
+  })
+
+  test('tokenExpirationDate missing', async () => {
+    await User.updateOne({ activationKey, activationToken }, { $unset: { tokenExpirationDate: '' } })
+
+    expect(await User.resetPassword(activationToken, activationKey, 'newPassword')).toEqual({
+      success: false,
+      code: 'INVALID_RESET_KEY',
+    })
+  })
+
+  test('object and non-string tokens/keys are rejected without querying mongo', async () => {
+    const findOne = jest.spyOn(User, 'findOne')
+    try {
+      for (const bad of [{ $regex: '^a' }, { $ne: '' }, ['x'], 123, null, undefined, '']) {
+        expect(await User.resetPassword(bad, activationKey, 'newPassword')).toEqual({ success: false, code: 'INVALID_RESET_KEY' })
+        expect(await User.resetPassword(activationToken, bad, 'newPassword')).toEqual({ success: false, code: 'INVALID_RESET_KEY' })
+      }
+      expect(findOne).not.toHaveBeenCalled()
+    } finally {
+      findOne.mockRestore()
+    }
+  })
+
+  test('empty tokens do not match users whose tokens were already cleared', async () => {
+    await User.resetPassword(activationToken, activationKey, 'firstPassword')
+    expect(await User.resetPassword('', '', 'secondPassword')).toEqual({ success: false, code: 'INVALID_RESET_KEY' })
+    const updatedUser = await User.findOne({ email })
+    expect(await User.validatePassword(updatedUser, 'firstPassword')).toBeTruthy()
+  })
+
+  test('invalid new password is rejected without querying mongo and leaves the token intact', async () => {
+    const findOne = jest.spyOn(User, 'findOne')
+    try {
+      for (const bad of ['', undefined, null, 123, { $ne: '' }]) {
+        expect(await User.resetPassword(activationToken, activationKey, bad)).toEqual({ success: false, code: 'INVALID_PASSWORD' })
+      }
+      expect(findOne).not.toHaveBeenCalled()
+    } finally {
+      findOne.mockRestore()
+    }
+    const unchanged = await User.findOne({ email })
+    expect(unchanged.activationToken).toBe(activationToken)
+    expect(unchanged.activationKey).toBe(activationKey)
+    expect(await User.validatePassword(unchanged, 'password')).toBeTruthy()
   })
 
   test('happy reset', async () => {
     const newPassword = 'newPassword'
-    await User.resetPassword(activationToken, activationKey, newPassword)
+    expect(await User.resetPassword(activationToken, activationKey, newPassword)).toEqual({ success: true })
 
     const updatedUser = await User.findOne({ email: 'resetUser@email.com' })
-    const expectedDbUser = dbUser
+    const expectedDbUser = { ...dbUser }
     expectedDbUser.activationKey = ''
     expectedDbUser.activationToken = ''
     expectedDbUser.tokenExpirationDate = ''
@@ -121,9 +174,28 @@ describe('resetPassword method', () => {
     expect(updatedUser).toMatchObject(expectedDbUser)
     expect(await User.validatePassword(updatedUser, newPassword)).toBeTruthy()
   })
+
+  test('the token can only be used once', async () => {
+    expect(await User.resetPassword(activationToken, activationKey, 'firstPassword')).toEqual({ success: true })
+    expect(await User.resetPassword(activationToken, activationKey, 'secondPassword')).toEqual({
+      success: false,
+      code: 'INVALID_RESET_KEY',
+    })
+    const updatedUser = await User.findOne({ email })
+    expect(await User.validatePassword(updatedUser, 'firstPassword')).toBeTruthy()
+  })
+
+  test('concurrent resets with the same token yield exactly one success', async () => {
+    const results = await Promise.all([
+      User.resetPassword(activationToken, activationKey, 'passwordOne'),
+      User.resetPassword(activationToken, activationKey, 'passwordTwo'),
+    ])
+    expect(results.filter(r => r.success)).toHaveLength(1)
+    expect(results.filter(r => !r.success)).toEqual([{ success: false, code: 'INVALID_RESET_KEY' }])
+  })
 })
 
-describe('isResetTokenExpired method', () => {
+describe('checkResetToken method', () => {
   const email = 'tokenStatusUser@email.com'
   const activationKey = 'activationKey02'
   const activationToken = 'activationTokenStatus'
@@ -139,23 +211,40 @@ describe('isResetTokenExpired method', () => {
 
   beforeEach(async () => {
     await User.deleteMany({})
-    await User.create(dbUser)
+    await User.create({ ...dbUser })
   })
 
   test('token not found', async () => {
-    expect(await User.isResetTokenExpired('noSuchToken')).toBe(true)
+    expect(await User.checkResetToken('noSuchToken')).toEqual({ expired: true, code: 'INVALID_RESET_KEY' })
   })
 
   test('token found and not expired', async () => {
-    expect(await User.isResetTokenExpired(activationToken)).toBe(false)
+    expect(await User.checkResetToken(activationToken)).toEqual({ expired: false, code: undefined })
   })
 
   test('token found and expired', async () => {
-    const dateNow = new Date()
-    const expiredDate = new Date().setMinutes(dateNow.getMinutes() - TOKEN_EXPIRATION_TIME_MINUTES)
+    const expiredDate = new Date(Date.now() - (TOKEN_EXPIRATION_TIME_MINUTES + 1) * 60 * 1000)
     await User.updateOne({ activationToken }, { $set: { tokenExpirationDate: expiredDate } })
 
-    expect(await User.isResetTokenExpired(activationToken)).toBe(true)
+    expect(await User.checkResetToken(activationToken)).toEqual({ expired: true, code: 'RESET_KEY_EXPIRED' })
+  })
+
+  test('tokenExpirationDate missing is invalid, matching resetPassword', async () => {
+    await User.updateOne({ activationToken }, { $unset: { tokenExpirationDate: '' } })
+
+    expect(await User.checkResetToken(activationToken)).toEqual({ expired: true, code: 'INVALID_RESET_KEY' })
+  })
+
+  test('object and non-string tokens are rejected without querying mongo', async () => {
+    const findOne = jest.spyOn(User, 'findOne')
+    try {
+      for (const bad of [{ $regex: '^a' }, { $ne: '' }, ['x'], 123, null, undefined, '']) {
+        expect(await User.checkResetToken(bad)).toEqual({ expired: true, code: 'INVALID_RESET_KEY' })
+      }
+      expect(findOne).not.toHaveBeenCalled()
+    } finally {
+      findOne.mockRestore()
+    }
   })
 })
 

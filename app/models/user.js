@@ -4,6 +4,7 @@ const { Collection } = require('@enciv/mongo-collections')
 const bcrypt = require('bcrypt')
 const { randomString } = require('../lib/random-string')
 const { base64url } = require('../lib/base64url')
+const { isValidResetToken } = require('../lib/is-valid-reset-token')
 
 const schema = Joi.object({
   _id: Joi.object(),
@@ -103,21 +104,27 @@ class User extends Collection {
   }
 
   // looks up by token alone (no key) so the reset-password page can show expiry status before the user enters the key
-  static async isResetTokenExpired(activationToken) {
+  static async checkResetToken(activationToken) {
+    if (!isValidResetToken(activationToken)) return { expired: true, code: 'INVALID_RESET_KEY' }
     const user = await User.findOne({ activationToken })
-    if (!user) return true
-    return User.isTokenExpirationDateExpired(user.tokenExpirationDate)
+    if (!user || !user.tokenExpirationDate) return { expired: true, code: 'INVALID_RESET_KEY' }
+    const expired = User.isTokenExpirationDateExpired(user.tokenExpirationDate)
+    return { expired, code: expired ? 'RESET_KEY_EXPIRED' : undefined }
   }
 
   static async resetPassword(activationToken, activationKey, newPassword) {
+    if (!isValidResetToken(activationToken)) return { success: false, code: 'INVALID_RESET_KEY' }
+    if (!isValidResetToken(activationKey)) return { success: false, code: 'INVALID_RESET_KEY' }
+    if (typeof newPassword !== 'string' || !newPassword) return { success: false, code: 'INVALID_PASSWORD' }
     const user = await User.findOne({ activationToken, activationKey })
-    if (!user) throw new Error('resetPassword - user not found')
-    if (!user.tokenExpirationDate) throw new Error('resetPassword - tokenExpirationDate missing')
+    if (!user || !user.tokenExpirationDate) return { success: false, code: 'INVALID_RESET_KEY' }
     if (User.isTokenExpirationDateExpired(user.tokenExpirationDate)) {
-      throw new Error('token expired')
+      return { success: false, code: 'RESET_KEY_EXPIRED' }
     }
     const hash = await bcrypt.hash(newPassword, 10)
-    await User.updateOne(
+    // the filter still requires the token/key, which the first successful request clears,
+    // so a concurrent second request matches nothing
+    const { matchedCount } = await User.updateOne(
       { activationKey, activationToken },
       {
         $set: {
@@ -128,6 +135,8 @@ class User extends Collection {
         },
       }
     )
+    if (!matchedCount) return { success: false, code: 'INVALID_RESET_KEY' }
+    return { success: true }
   }
 }
 
