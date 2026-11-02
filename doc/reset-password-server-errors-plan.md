@@ -26,6 +26,8 @@ sanitization layer in front of it (see `app/server/socket-api.js`). Passing a
 non-string (e.g. `{ $regex: '^a' }`) straight into `User.findOne(...)` is a
 NoSQL injection / token-probing risk. Both `checkResetToken` and
 `resetPassword` must reject non-string/empty inputs before querying Mongo.
+`newPassword` gets the same treatment (a non-string would make `bcrypt.hash`
+throw and surface as a misleading `GENERIC_RESET_ERROR`).
 
 > **Q (Justin B. Yee):** We do this validation in multiple areas for
 > non-string or malformed strings. In the case we need to update the checks
@@ -34,23 +36,13 @@ NoSQL injection / token-probing risk. Both `checkResetToken` and
 >
 > **A:** Yes. As written, the plan already duplicates the same
 > `typeof x !== 'string' || !x` check across `checkResetToken` and
-> `resetPassword` (3 call sites total). Extract it into a single helper, e.g.
-> `app/lib/is-valid-reset-token.js`:
-> ```js
-> // tokens/keys are base64url(randomString(12)), which is 16 chars of [A-Za-z0-9_-].
-   // Restrict to that charset (not a fixed length, in case legacy tokens differ), not just "truthy string"
-> const RESET_TOKEN_PATTERN = /^[A-Za-z0-9_-]+$/
->
-> export function isValidResetToken(value) {
->   return typeof value === 'string' && RESET_TOKEN_PATTERN.test(value)
-> }
-> ```
-> That gives one place to tighten the rule later (e.g. enforcing the exact
-> 16-char length produced by `base64url(randomString(12))`, once we're sure no
-> legacy tokens differ) instead of updating three
-> call sites and risking one getting missed. Both `app/models/user.js`
-> snippets below should call `isValidResetToken(...)` instead of the inline
-> `typeof`/truthy check.
+> `resetPassword` (3 call sites total). Extract it into a single helper,
+> `app/lib/is-valid-reset-token.js` (code in server step 2 below), so there is
+> one place to tighten the rule later (e.g. enforcing the exact 16-char length
+> produced by `base64url(randomString(12))`, once we're sure no legacy tokens
+> differ) instead of updating three call sites and risking one getting missed.
+> Both `app/models/user.js` snippets below should call `isValidResetToken(...)`
+> instead of the inline `typeof`/truthy check.
 
 ## Response contract
 
@@ -74,6 +66,7 @@ Error codes:
 | --------------------- | --------------------------------------------------- |
 | `INVALID_RESET_KEY`   | token/key pair not found, no expiration date set, or malformed input |
 | `RESET_KEY_EXPIRED`   | token found but past `tokenExpirationDate`          |
+| `INVALID_PASSWORD`    | `newPassword` is not a non-empty string (checked before any DB lookup) |
 | `GENERIC_RESET_ERROR` | unexpected/unhandled failure (DB error, etc.)        |
 
 `INVALID_RESET_KEY` vs `RESET_KEY_EXPIRED` is only ever decided *after* the
@@ -81,6 +74,11 @@ token and key both match in `resetPassword` (or after a token is found in the
 precheck), so an attacker can't use the two codes to probe which half of a
 guessed token/key pair is wrong. Don't add a separate "token found, key
 wrong" code.
+
+Known, accepted exception: `check-reset-token` takes only the token, so
+`INVALID_RESET_KEY` vs `RESET_KEY_EXPIRED` does reveal whether a token exists.
+Tokens are 96 bits of randomness, so guessing one is infeasible; this is
+documented rather than changed.
 
 ## Server changes (civil-server)
 
@@ -90,6 +88,7 @@ wrong" code.
    export default {
      INVALID_RESET_KEY: 'This reset key is not valid. Please check your email and try again.',
      RESET_KEY_EXPIRED: 'This reset key has expired. Please request a new password reset email.',
+     INVALID_PASSWORD: 'Please enter a valid new password.',
      GENERIC_RESET_ERROR: 'An unknown error occurred while resetting your password. Please try again or contact support.',
    }
    ```
@@ -99,7 +98,8 @@ wrong" code.
    instead of each duplicating the same inline check:
    ```js
    // tokens/keys are base64url(randomString(12)), which is 16 chars of [A-Za-z0-9_-].
-// Restrict to that charset (not a fixed length, in case legacy tokens differ), not just "truthy string"
+   // Restrict to that charset (not a fixed length, in case legacy tokens differ), not just "truthy string".
+   // Keep `+` (not `*`): cleared tokens are stored as '', so '' must be rejected.
    const RESET_TOKEN_PATTERN = /^[A-Za-z0-9_-]+$/
 
    export function isValidResetToken(value) {
@@ -107,31 +107,42 @@ wrong" code.
    }
    ```
 
-3. **`app/models/user.js`** — change `User.resetPassword` to *return* a result
-   object instead of throwing for expected failures, and reject invalid
-   inputs before querying:
+3. **`app/models/user.js`** — add the helper import at the top of the file
+   with the other requires:
    ```js
    const { isValidResetToken } = require('../lib/is-valid-reset-token')
-
+   ```
+   Then change `User.resetPassword` to *return* a result object instead of
+   throwing for expected failures, reject invalid inputs before querying, and
+   claim the token atomically so two simultaneous requests with the same
+   token can't both succeed (today's `findOne` then `updateOne` lets both
+   pass the `findOne`):
+   ```js
    static async resetPassword(activationToken, activationKey, newPassword) {
      if (!isValidResetToken(activationToken)) return { success: false, code: 'INVALID_RESET_KEY' }
      if (!isValidResetToken(activationKey)) return { success: false, code: 'INVALID_RESET_KEY' }
+     if (typeof newPassword !== 'string' || !newPassword) return { success: false, code: 'INVALID_PASSWORD' }
      const user = await User.findOne({ activationToken, activationKey })
      if (!user || !user.tokenExpirationDate) return { success: false, code: 'INVALID_RESET_KEY' }
      if (User.isTokenExpirationDateExpired(user.tokenExpirationDate)) {
        return { success: false, code: 'RESET_KEY_EXPIRED' }
      }
      const hash = await bcrypt.hash(newPassword, 10)
-     await User.updateOne(
+     // the filter still requires the token/key, which the first successful request clears,
+     // so a concurrent second request matches nothing
+     const { matchedCount } = await User.updateOne(
        { activationKey, activationToken },
        { $set: { password: hash, activationKey: '', activationToken: '', tokenExpirationDate: '' } }
      )
+     if (!matchedCount) return { success: false, code: 'INVALID_RESET_KEY' }
      return { success: true }
    }
    ```
    > **Note:** validation is delegated to `isValidResetToken()` rather than
    > repeating `typeof x !== 'string' || !x` inline, so tightening the rule
-   > later only requires editing one file.
+   > later only requires editing one file. The password check comes after the
+   > token/key format checks and before any DB access, so it reveals nothing
+   > about whether a token exists.
 
    No `throw` for the "not found" / "missing" / "expired" / "bad input" cases.
    Unexpected errors (e.g. `bcrypt.hash` or `updateOne` rejecting) are allowed
@@ -208,45 +219,116 @@ wrong" code.
    ```
 
 6. **`app/web-components/reset-password.js`** — update the `check-reset-token`
-   callback to read the new response shape, declare the state, pass the
-   message down, and render the expired state in this wrapper (no form) so
-   this PR is correct on its own without waiting for a civil-client merge and
-   dependency bump. The wrapper branch can be dropped once civil-client
-   handles the `expired` prop itself:
+   callback to read the new response shape and render the expired state in
+   this wrapper (no form) so this PR is correct on its own without waiting
+   for a civil-client merge and dependency bump. The wrapper branch can be
+   dropped once civil-client handles the `expired` prop itself.
+
+   **No flash of the form:** today the form renders immediately with
+   `expired = false` and is swapped out when the precheck returns. Instead,
+   track the precheck as `check` (`null` = pending) and show a
+   "Checking your link..." placeholder instead of the form until it resolves,
+   so the user always sees *something* while waiting. Every path must resolve
+   `check`, including a precheck that never calls back (e.g. the server
+   handler never invokes `cb`, or the socket stays disconnected), so the
+   precheck has a timeout that falls back to the form:
    ```js
-   const [expired, setExpired] = useState(false)
-   const [expiredMessage, setExpiredMessage] = useState('')
+   const PRECHECK_TIMEOUT_MS = 5000 // a guess; tune if the precheck is normally slower than this
+   const [check, setCheck] = useState(null) // null = precheck pending
 
-   window.socket.emit('check-reset-token', activationToken, response => {
-     if (!response.success) return console.error('check-reset-token failed:', response.message)
-     setExpired(!!response.expired)
-     setExpiredMessage(response.message || '')
-   })
+   useEffect(() => {
+     const urlParams = new URLSearchParams(document.location.search)
+     setParams(urlParams)
+     const activationToken = urlParams.get('t')
+     // no token or no socket: nothing to check, show the form (client reports MISSING_RESET_KEY)
+     if (!activationToken || !window.socket) return setCheck({ expired: false })
 
-   // add an `expired` rule to the wrapper's useStyles (it doesn't exist today)
+     let settled = false
+     const settle = result => {
+       if (settled) return // first outcome wins; late callbacks and unmount are ignored
+       settled = true
+       clearTimeout(timer)
+       setCheck(result)
+     }
+     // precheck failed or timed out: show the form anyway, reset-password re-validates on submit
+     const timer = setTimeout(() => {
+       console.error('check-reset-token timed out')
+       settle({ expired: false })
+     }, PRECHECK_TIMEOUT_MS)
+     window.socket.emit('check-reset-token', activationToken, response => {
+       if (!response.success) {
+         console.error('check-reset-token failed:', response.message)
+         return settle({ expired: false })
+       }
+       settle({ expired: !!response.expired, message: response.message })
+     })
+     return () => {
+       settled = true
+       clearTimeout(timer)
+     }
+   }, [])
 
-   // render
-   {expired ? (
-     <div className={classes.expired}>{expiredMessage}</div>
+   // add `expired` and `checking` rules to the wrapper's useStyles (neither exists today)
+
+   // render (inside centeredWrapper)
+   {!check ? (
+     <div className={classes.checking}>Checking your link...</div>
+   ) : check.expired ? (
+     <div className={classes.expired}>{check.message}</div>
    ) : (
-     <ClientResetPassword activationToken={...} returnTo={...} expired={expired} message={expiredMessage} />
+     <ClientResetPassword activationToken={params?.get('t') || ''} returnTo={params?.get('p') || ''} />
    )}
    ```
+   Behavior by case:
+   - **Resolves quickly:** placeholder, then form or expired message. No form
+     is ever shown and then replaced.
+   - **Resolves late (after the timeout):** the form is already showing and the
+     late result is ignored, so a half-typed form is never swapped out from
+     under the user. The only loss is the early "expired" notice; submitting
+     still gets `RESET_KEY_EXPIRED` from `reset-password`, which is the
+     authoritative check anyway.
+   - **Never resolves:** after `PRECHECK_TIMEOUT_MS` the form appears (same
+     fallback as a failed precheck) and the timeout is logged.
+   - **Socket not yet connected:** socket.io buffers the emit until it
+     connects, so a slow connect is covered by the same timeout.
+
+   `message` is only ever set when `expired` is true, and the client component
+   gets no `expired`/`message` props from the wrapper (it would always be
+   `false`/empty there).
 
 7. **Tests**
    - New `app/lib/__tests__/is-valid-reset-token.js`: valid tokens, empty
      string, non-string/object input (e.g. `{ $regex: '^a' }`), and
      disallowed characters.
-   - `app/models/__tests__/user.js`: replace `.rejects.toThrow(...)` expectations
-     for `resetPassword` with assertions on the returned `{ success, code }`
-     object (not-found, expired, success, and invalid-input cases). Add
-     `checkResetToken` cases for object/non-string input (e.g.
-     `{ $regex: '^a' }`) to confirm it returns `INVALID_RESET_KEY` without
-     querying Mongo.
-   - Update the existing `isResetTokenExpired` assertions in
-     `app/models/__tests__/user.js` (now `checkResetToken`): they currently
-     expect a boolean and must expect `{ expired, code }`, including the
-     missing-`tokenExpirationDate` case returning `INVALID_RESET_KEY`.
+   - `app/models/__tests__/user.js`:
+     - `resetPassword`: replace `.rejects.toThrow(...)` expectations with
+       assertions on the returned `{ success, code }` object (not-found,
+       expired, success, and invalid-input cases).
+     - `checkResetToken` (renamed from `isResetTokenExpired`): update the
+       existing assertions from a boolean to `{ expired, code }`, including
+       the missing-`tokenExpirationDate` case returning `INVALID_RESET_KEY`.
+     - Both: object/non-string input (e.g. `{ $regex: '^a' }`) returns
+       `INVALID_RESET_KEY` without querying Mongo, and so does the empty
+       string (cleared tokens are stored as `''`, so an unchecked `''` would
+       match users who already reset).
+     - `resetPassword` with a non-string or empty `newPassword` returns
+       `INVALID_PASSWORD`, does not query Mongo, and leaves the token intact.
+     - `resetPassword` race: two concurrent calls (`Promise.all`) with the same
+       valid token/key yield exactly one `{ success: true }` and one
+       `INVALID_RESET_KEY`.
+   - New `app/web-components/__tests__/reset-password.js` (jsdom via
+     `@testing-library/react`, jest fake timers, `jest.mock('civil-client')`
+     for `ResetPassword`, a stub `window.socket.emit`): placeholder shown
+     while pending; form after a non-expired result; expired message after an
+     expired result (and no form); form after `success: false`; form after the
+     5s timeout with the timeout logged; a result arriving after the timeout
+     is ignored; no token in the URL shows the form without emitting.
+   - `cypress/integration/02-reset-password.spec.js`: the "Bad Reset Key" case
+     asserts the old text ("Error resetting password, please try again or
+     contact support"); update it to the new `INVALID_RESET_KEY` message
+     ("This reset key is not valid..."). Add an expired-token case (seed
+     `tokenExpirationDate` more than 10 minutes in the past) that expects the
+     expired message and no form.
    - Socket-handler test with an object-valued token (e.g.
      `{ $regex: '^a' }`) asserting `User.findOne` is never called.
    - New `app/socket-apis/__tests__/reset-password.js` and
@@ -296,12 +378,13 @@ users see it before civil-client#15 lands.
      })
      ```
    - Currently `expired` is passed down from the civil-server wrapper as a
-     prop but never destructured or used — the component always renders the
-     normal form. Accept `expired` (and a `message` prop for the expired-state
-     text) and render an expired-state view instead of the form when
-     `expired` is true, so the server-driven status is actually visible to
-     the user. (Only the *display* of the expired state — an actual
-     "resend email" action is out of scope, see below.)
+     prop but never destructured or used. The server wrapper now renders the
+     expired state itself and no longer passes `expired`/`message`, so
+     civil-client needs no change here for this fix. If civil-client should
+     own the expired view later, it can accept `expired` and `message` props
+     and the wrapper's expired branch can be dropped. (Only the *display* of
+     the expired state — an actual "resend email" action is out of scope,
+     see below.)
 
 ## Out of scope / follow-up
 
@@ -312,3 +395,6 @@ users see it before civil-client#15 lands.
   plumbing.
 - The civil-pursuit "password never set" wording distinction mentioned in
   civil-server#65.
+- Trimming whitespace from the reset key the user types (civil-client
+  `reset-password.jsx` does not trim). A key pasted with a trailing space is
+  rejected, same as today's exact-match lookup, so this is not a regression.
