@@ -4,7 +4,7 @@ describe('Reset Password', () => {
   const resetPasswordUrl = `/resetPassword?t=${activationToken}&p=/join`
   const newPassword = 'newPassword'
 
-  beforeEach(() => {
+  const seedUser = tokenExpirationDate => {
     const insertUser = {
       firstName: 'CypressPassword',
       lastName: 'User',
@@ -12,11 +12,22 @@ describe('Reset Password', () => {
       password: '$2b$10$k.hGsOGo767S24ZglYm7PeWYTDf5bogFASx/5FqWDuaIzb3AumlK.', // old password is 'password'
       activationKey: activationKey,
       activationToken: activationToken,
-      tokenExpirationDate: new Date(),
+      tokenExpirationDate,
     }
     cy.log(JSON.stringify(insertUser).replace(/"/g, '\\"'))
     cy.exec("npm run mongo:delete-user -- 'cypressPassword@example.com'")
     cy.exec('mongo --eval "db.users.insert(' + JSON.stringify(insertUser).replace(/"/g, '\\"') + ')"')
+  }
+
+  beforeEach(() => {
+    seedUser(new Date())
+  })
+
+  it('Expired reset key shows the expired message and no form', () => {
+    seedUser(new Date(Date.now() - 11 * 60 * 1000))
+    cy.visit(resetPasswordUrl)
+    cy.contains('This reset key has expired')
+    cy.get('input[name=resetKey]').should('not.exist')
   })
 
   it('Password Mismatch displays error', () => {
@@ -38,7 +49,7 @@ describe('Reset Password', () => {
     cy.get('input[name=newPassword]').type(newPassword)
     cy.get('input[name=confirmPassword]').type(newPassword + '{enter}')
 
-    cy.contains('Error resetting password, please try again or contact support')
+    cy.contains('This reset key is not valid')
   })
 
   it('No New Password Entered', () => {
