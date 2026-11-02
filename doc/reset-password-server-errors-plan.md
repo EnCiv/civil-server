@@ -327,7 +327,10 @@ documented rather than changed.
      - `resetPassword` race: two concurrent calls (`Promise.all`) with the same
        valid token/key yield exactly one `{ success: true }` and one
        `INVALID_RESET_KEY`.
-   - New `app/web-components/__tests__/reset-password.js` (jsdom via
+   - New `app/components/__tests__/reset-password.js` (not under
+     `app/web-components/`: `react-directory-indexer` lists every entry in that
+     directory, including `__tests__`, and the build ignores `__tests__`, so the
+     generated index would `require` a directory that doesn't exist; jsdom via
      `@testing-library/react`, jest fake timers, `jest.mock('civil-client')`
      for `ResetPassword`, a stub `window.socket.emit`): placeholder shown
      while pending; form after a non-expired result; expired message after an

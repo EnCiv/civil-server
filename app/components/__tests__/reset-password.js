@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { render, screen, act } from '@testing-library/react'
-import ResetPassword from '../reset-password'
+import ResetPassword from '../../web-components/reset-password'
 
 // the civil-client form is not under test here; stub it so we can see when it renders and what it is given
 jest.mock(
