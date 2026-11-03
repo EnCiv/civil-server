@@ -94,7 +94,7 @@ describe('resetPassword method', () => {
   test('token expired', async () => {
     const dateNow = new Date()
     const expiredDate = new Date().setMinutes(dateNow.getMinutes() - TOKEN_EXPIRATION_TIME_MINUTES)
-    User.updateOne(
+    await User.updateOne(
       { activationKey, activationToken },
       {
         $set: {
