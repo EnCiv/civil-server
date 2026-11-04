@@ -157,14 +157,16 @@ class HttpServer {
     }
   }
 
-  earlyStart() {
-    return new Promise(async (ok, ko) => {
+  async earlyStart() {
+    try {
       // heroku is going to delete the MONGODB_URI var on Nov10 - we need something else to use in the mean time
       const MONGODB_URI = process.env.PRIMARYDB_URI || process.env.MONGODB_URI
-      if (!MONGODB_URI) ko(new Error('Missing PRIMARYDB_URI or MONGODB_URI'))
+      if (!MONGODB_URI) throw new Error('Missing PRIMARYDB_URI or MONGODB_URI')
       await Mongo.connect(MONGODB_URI)
-      return ok()
-    })
+    } catch (error) {
+      logger.error('CivilServer.earlyStart failed to initialize MongoDB:', error)
+      throw error
+    }
   }
   // a minute after a request has been received, check and see if the response has been sent.
   timeout() {
