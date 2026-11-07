@@ -4,21 +4,23 @@
 'use strict'
 
 import React from 'react'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import ResetPassword from '../../web-components/reset-password'
 
 // the civil-client form is not under test here; stub it so we can see when it renders and what it is given
 jest.mock(
   'civil-client',
   () => ({
-    ResetPassword: ({ activationToken, returnTo }) => (
-      <div data-testid="form" data-token={activationToken} data-return-to={returnTo} />
+    ResetPassword: ({ activationToken, returnTo, onExpired }) => (
+      <div data-testid="form" data-token={activationToken} data-return-to={returnTo}>
+        <button onClick={() => onExpired('expired at submit')}>submit expired</button>
+      </div>
     ),
   }),
   { virtual: true }
 )
 
-const EXPIRED_MESSAGE = 'This reset key has expired. Please request a new password reset email.'
+const EXPIRED_MESSAGE = 'This reset key has expired. Please enter your email and we will send a new one.'
 
 function setUrl(search) {
   window.history.pushState({}, '', '/resetPassword' + search)
@@ -119,5 +121,69 @@ describe('reset-password web component', () => {
     delete window.socket
     render(<ResetPassword />)
     expect(screen.getByTestId('form')).toBeInTheDocument()
+  })
+
+  describe('expired view: send a new email', () => {
+    // renders the expired view and returns the callback of the send-password emit, once a send is clicked
+    function renderExpired() {
+      const { callback } = renderAndGetPrecheckCallback()
+      act(() => callback({ success: true, expired: true, code: 'RESET_KEY_EXPIRED', message: EXPIRED_MESSAGE }))
+      window.socket.emit.mockClear()
+    }
+    const typeEmail = value => fireEvent.change(screen.getByLabelText('Email address'), { target: { value } })
+    const clickSend = () => fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    test('shows the message with an email input and a send button', () => {
+      renderExpired()
+      expect(screen.getByText(EXPIRED_MESSAGE)).toBeInTheDocument()
+      expect(screen.getByLabelText('Email address')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
+    })
+
+    test('an empty email shows an error and does not emit', () => {
+      renderExpired()
+      clickSend()
+      expect(screen.getByText('Please enter an email before clicking Send')).toBeInTheDocument()
+      expect(window.socket.emit).not.toHaveBeenCalled()
+    })
+
+    test('emits send-password with the email and the return path, then confirms', () => {
+      renderExpired()
+      typeEmail('me@example.com')
+      clickSend()
+      expect(screen.getByText('One moment...')).toBeInTheDocument()
+      const [event, email, returnTo, cb] = window.socket.emit.mock.calls[0]
+      expect([event, email, returnTo]).toEqual(['send-password', 'me@example.com', '/join'])
+      act(() => cb())
+      expect(screen.getByText('Message sent! Please check your inbox')).toBeInTheDocument()
+      expect(screen.queryByText('One moment...')).not.toBeInTheDocument()
+    })
+
+    test('"User not found" is shown as "Email not found"', () => {
+      renderExpired()
+      typeEmail('nobody@example.com')
+      clickSend()
+      act(() => window.socket.emit.mock.calls[0][3]({ error: 'User not found' }))
+      expect(screen.getByText('Email not found')).toBeInTheDocument()
+      expect(screen.queryByText('Message sent! Please check your inbox')).not.toBeInTheDocument()
+    })
+
+    test('a bare string response from send-password is shown as an error', () => {
+      renderExpired()
+      typeEmail('me@example.com')
+      clickSend()
+      act(() => window.socket.emit.mock.calls[0][3]('error sending reset password email'))
+      expect(screen.getByText('error sending reset password email')).toBeInTheDocument()
+      expect(screen.queryByText('Message sent! Please check your inbox')).not.toBeInTheDocument()
+    })
+  })
+
+  test('switches to the expired view when the form reports an expired key on submit', () => {
+    const { callback } = renderAndGetPrecheckCallback()
+    act(() => callback({ success: true, expired: false }))
+    fireEvent.click(screen.getByRole('button', { name: 'submit expired' }))
+    expect(screen.getByText('expired at submit')).toBeInTheDocument()
+    expect(screen.getByLabelText('Email address')).toBeInTheDocument()
+    expect(screen.queryByTestId('form')).not.toBeInTheDocument()
   })
 })

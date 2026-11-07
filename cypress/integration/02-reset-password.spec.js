@@ -26,7 +26,8 @@ describe('Reset Password', () => {
   it('Expired reset key shows the expired message and no form', () => {
     seedUser(new Date(Date.now() - 11 * 60 * 1000))
     cy.visit(resetPasswordUrl)
-    cy.contains('This reset key has expired')
+    cy.contains('This reset key has expired. Please enter your email and we will send a new one.')
+    cy.get('input[name=email]').should('exist')
     cy.get('input[name=resetKey]').should('not.exist')
   })
 

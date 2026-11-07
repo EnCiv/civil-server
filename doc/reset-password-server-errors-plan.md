@@ -53,7 +53,7 @@ All reset-password-related socket APIs call back with a single JSON object:
 cb({ success: true })
 
 // failure
-cb({ success: false, code: 'RESET_KEY_EXPIRED', message: 'This reset key has expired. Please request a new password reset email.' })
+cb({ success: false, code: 'RESET_KEY_EXPIRED', message: 'This reset key has expired. Please enter your email and we will send a new one.' })
 ```
 
 - `code` is machine-readable and stable, for any future client branching
@@ -87,7 +87,7 @@ documented rather than changed.
    ```js
    export default {
      INVALID_RESET_KEY: 'This reset key is not valid. Please check your email and try again.',
-     RESET_KEY_EXPIRED: 'This reset key has expired. Please request a new password reset email.',
+     RESET_KEY_EXPIRED: 'This reset key has expired. Please enter your email and we will send a new one.',
      INVALID_PASSWORD: 'Please enter a valid new password.',
      GENERIC_RESET_ERROR: 'An unknown error occurred while resetting your password. Please try again or contact support.',
    }
@@ -374,7 +374,9 @@ civil-client checkout has no effect on civil-server's real install until
 civil-client#15 is merged and that dependency is bumped to the new commit/tag.
 
 The server wrapper renders the expired state itself (server step 6), so
-users see it before civil-client#15 lands.
+users see it before civil-client#15 lands. The one piece that needs the
+client change is the `onExpired` prop (an expiry discovered on submit); with
+an older client that case just shows the message as a form error.
 
 ## Client changes (civil-client)
 
@@ -397,22 +399,38 @@ users see it before civil-client#15 lands.
        setTimeout(() => (location.href = returnTo || '/join'), 800)
      })
      ```
-   - Currently `expired` is passed down from the civil-server wrapper as a
-     prop but never destructured or used. The server wrapper now renders the
-     expired state itself and no longer passes `expired`/`message`, so
-     civil-client needs no change here for this fix. If civil-client should
-     own the expired view later, it can accept `expired` and `message` props
-     and the wrapper's expired branch can be dropped. (Only the *display* of
-     the expired state — an actual "resend email" action is out of scope,
-     see below.)
+   - Add an optional `onExpired` prop. When `reset-password` calls back with
+     `RESET_KEY_EXPIRED` and `onExpired` is set, call `onExpired(response.message)`
+     instead of showing the message in the form, so the host page can switch
+     to the resend view below. Without the prop the message is shown as a
+     form error, as before.
+   - The expired view itself lives in the civil-server wrapper (server step
+     6), not in civil-client, so it works before a civil-client bump. If
+     civil-client should own it later, the wrapper's expired branch can be
+     dropped.
+
+## Resend a new email from the expired view
+
+The expired message is now "This reset key has expired. Please enter your
+email and we will send a new one." The wrapper's expired view shows that
+message with an email input and a Send button. It reuses the login page's
+Forgot Password flow rather than adding a new API: it emits the existing
+`send-password` event with `(email, returnTo, cb)`, where `returnTo` is the
+page's `p` parameter (not `window.location.pathname`, which here is
+`/resetPassword`), and uses the same wording ("Message sent! Please check
+your inbox", `User not found` shown as "Email not found"). It also treats a
+bare-string callback as an error, since `send-password` calls back with a
+string when the email fails to send.
+
+The same view appears when a reset is *submitted* after the key expires:
+the civil-client form reports it through `onExpired`.
+
+Known and inherited from `send-password`, not changed here: it reports
+whether an email is registered ("Email not found"), and it is unauthenticated
+and unthrottled.
 
 ## Out of scope / follow-up
 
-- Adding an actual "resend email" button/action triggered by the
-  `RESET_KEY_EXPIRED` code — flagged by Copilot's review on civil-client#15.
-  This plan only makes the expired state *visible* (see client changes
-  above); sending a new email is a larger UX/API addition, not just response
-  plumbing.
 - The civil-pursuit "password never set" wording distinction mentioned in
   civil-server#65.
 - Trimming whitespace from the reset key the user types (civil-client
