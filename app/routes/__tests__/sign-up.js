@@ -3,7 +3,10 @@
 const { Mongo } = require('@enciv/mongo-collections')
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { signUp } from '../sign-up'
+import sendWelcomeEmail from '../../lib/send-welcome-email'
 const User = require('../../models/user')
+
+jest.mock('../../lib/send-welcome-email', () => jest.fn())
 
 if (!global.logger) {
   global.logger = console
@@ -28,6 +31,8 @@ describe('signUp function', () => {
   let next
 
   beforeEach(() => {
+    sendWelcomeEmail.mockReset()
+    sendWelcomeEmail.mockResolvedValue(true)
     mockRequest = { body: {} }
     mockResponse = {
       statusCode: null,
@@ -60,6 +65,18 @@ describe('signUp function', () => {
     expect(next).toHaveBeenCalledWith()
     expect(mockRequest.user).toBeDefined()
     expect(mockRequest.user.email).toBe('newuser@email.com')
+    expect(sendWelcomeEmail).toHaveBeenCalledWith('newuser@email.com')
+  })
+
+  it('continues signup if the welcome email fails', async () => {
+    mockRequest.body = { email: 'mailfailure@email.com', password: 'password' }
+    sendWelcomeEmail.mockRejectedValueOnce(new Error('email service unavailable'))
+
+    signUp(mockRequest, mockResponse, next)
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    expect(next).toHaveBeenCalledWith()
+    expect(mockRequest.user.email).toBe('mailfailure@email.com')
   })
 
   it('returns 401 if email is already in use', async () => {
