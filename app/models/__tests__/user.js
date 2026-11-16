@@ -36,7 +36,7 @@ describe('create method', () => {
     const expectedDbUser = dbUser
     expectedDbUser.password = expect.stringMatching(HASHED_PASSWORD_REGEX)
     expect(user).toMatchObject(dbUser)
-  }
+  })
   test('normalizes email and rejects case-insensitive duplicates', async () => {
     const user = await User.create({ email: ' Mixed.Case@Example.com ', password: 'password' })
     expect(user.email).toBe('mixed.case@example.com')
