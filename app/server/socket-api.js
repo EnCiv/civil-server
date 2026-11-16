@@ -10,17 +10,29 @@ import fetchHandlers from './util/fetch-handlers'
 // this is not catching the errors from hartford-address-lookup when there is not MAPS Api set - but still maybe it will catch some other error
 function handlerWrapper(handler, handle, ...args) {
   try {
-    handler.apply(this, args)
+    const result = handler.apply(this, args)
+    if (result && typeof result.catch === 'function') {
+      return result.catch(error => {
+        logger.error('caught async error from api handler', handle, error?.message || error, 'continuing', error)
+      })
+    }
+    return result
   } catch (error) {
-    logger.error('caught error from api handler', handle, error.message, 'continuing', error)
+    logger.error('caught error from api handler', handle, error?.message || error, 'continuing', error)
   }
 }
 
 function handlerStreamWrapper(handler, handle, ...args) {
   try {
-    handler.call(this, ...args)
+    const result = handler.call(this, ...args)
+    if (result && typeof result.catch === 'function') {
+      return result.catch(error => {
+        logger.error('caught async error from stream api handler', handle, error?.message || error, 'continuing', error)
+      })
+    }
+    return result
   } catch (error) {
-    logger.error('caught error from stream api handler', handle, error.message, 'continuing', error)
+    logger.error('caught error from stream api handler', handle, error?.message || error, 'continuing', error)
   }
 }
 
@@ -85,13 +97,19 @@ class API {
   async validateUserCookie(cookie, ok, ko) {
     if (this.users.some(user => user.id === cookie.id)) return ok()
     else {
-      let usr = await User.findOne({ _id: new User.ObjectId(cookie.id) })
-      if (!usr) {
-        logger.error(`API:validateUserCookie id ${cookie.id} not found in this server/db`)
-        if (ko) return ko()
-      } else {
-        this.users.push(cookie)
-        return ok()
+      try {
+        let usr = await User.findOne({ _id: new User.ObjectId(cookie.id) })
+        if (!usr) {
+          logger.error(`API:validateUserCookie id ${cookie.id} not found in this server/db`)
+          if (ko) return ko()
+        } else {
+          this.users.push(cookie)
+          return ok()
+        }
+      } catch (error) {
+        logger.error('API:validateUserCookie database lookup failed, continuing operation:', error)
+        if (ko) return ko(error)
+        return
       }
     }
   }
@@ -126,7 +144,10 @@ class API {
           () => {
             next(new Error(`API: User id ${cookie.id} not found in this server/db`))
           }
-        )
+        ).catch(error => {
+          logger.error('API.identify validateUserCookie failed:', error)
+          next(error instanceof Error ? error : new Error(`API: User id ${cookie.id} could not be validated`))
+        })
       } else next()
     } catch (error) {
       logger.info('API.identify caught error', error)
