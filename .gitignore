@@ -97,3 +97,5 @@ globalConfig.json
 .lesshst
 #if someone uses the vi edtior -ef merge commit messages
 .viminfo
+
+*.env*

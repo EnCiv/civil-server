@@ -6,7 +6,6 @@ process.env.NODE_ENV = 'test'
 
 module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest-test-setup.js'],
-  preset: '@shelf/jest-mongodb',
   testPathIgnorePatterns: ['/node_modules/', '/cypress/'],
   watchPathIgnorePatterns: ['<rootDir>/tmp/', '<rootDir>/node_modules/'],
   // Allow jest to transform civil-client (linked junction), bson (mjs-only in
