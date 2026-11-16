@@ -50,7 +50,7 @@
     "webpack-dev-server": "^6.0.0"
   },
   "peerDependencies": {
-    "civil-client": "github:EnCiv/civil-client"
+    "civil-client": "github:EnCiv/civil-client#resetpassword-errors%2365"
   },
   "devDependencies": {
     "@babel/cli": "^8.0.4",

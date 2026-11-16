@@ -161,6 +161,24 @@ describe('resetPassword method', () => {
     expect(await User.validatePassword(unchanged, 'password')).toBeTruthy()
   })
 
+  test('a token and key from generateTokenAndKey (what the email contains) reset the password', async () => {
+    for (let i = 0; i < 25; i++) {
+      const generated = await User.generateTokenAndKey(user)
+      const result = await User.resetPassword(generated.activationToken, generated.activationKey, 'newPassword')
+      expect({ i, ...result }).toEqual({ i, success: true })
+    }
+  })
+
+  test('a key copied from the email with surrounding whitespace is rejected as INVALID_RESET_KEY', async () => {
+    const generated = await User.generateTokenAndKey(user)
+    for (const key of [generated.activationKey + ' ', ' ' + generated.activationKey, generated.activationKey + '\n']) {
+      expect(await User.resetPassword(generated.activationToken, key, 'newPassword')).toEqual({
+        success: false,
+        code: 'INVALID_RESET_KEY',
+      })
+    }
+  })
+
   test('happy reset', async () => {
     const newPassword = 'newPassword'
     expect(await User.resetPassword(activationToken, activationKey, newPassword)).toEqual({ success: true })
