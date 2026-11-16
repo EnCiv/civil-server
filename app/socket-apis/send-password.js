@@ -4,18 +4,27 @@ import User from '../models/user'
 import { SibGetTemplateId, SibSendTransacEmail, brevoDefaultFromEmail } from '../lib/send-in-blue-transactional'
 import path from 'path'
 
-let templateId
+const DEFAULT_EMAIL_TYPE = 'reset'
+const emailVariants = {
+  reset: { template: 'reset-password' },
+  welcome: { template: 'welcome-password' },
+}
+const templateIds = {}
 
-async function sendResetPasswordEmail(host, toAddress, activationKey, activationToken, returnToPath) {
+async function sendResetPasswordEmail(host, toAddress, activationKey, activationToken, returnToPath, emailType) {
   logger.debug('sending password reset email to ', toAddress)
-  if (!templateId) {
-    templateId = await SibGetTemplateId(path.resolve(__dirname, '../../assets/email-templates/reset-password.html'))
-    if (!templateId) {
-      logger.error('reset-password template not found')
+  const variant = emailVariants[emailType] || emailVariants[DEFAULT_EMAIL_TYPE]
+  const templateName = variant.template
+  if (!templateIds[templateName]) {
+    templateIds[templateName] = await SibGetTemplateId(
+      path.resolve(__dirname, `../../assets/email-templates/${templateName}.html`)
+    )
+    if (!templateIds[templateName]) {
+      logger.error(`${templateName} template not found`)
       return false
     }
   }
-  logger.debug('template id found: ', templateId)
+  logger.debug('template id found: ', templateIds[templateName])
 
   const protocol = host.includes('localhost') ? 'http' : 'https'
   const resetPasswordUrl = `${protocol}://${host}/resetPassword?t=${activationToken}&p=${returnToPath}`
@@ -26,8 +35,8 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
       name: 'EnCiv.org',
       email: brevoDefaultFromEmail,
     },
-    templateId,
-    tags: ['reset-password'],
+    templateId: templateIds[templateName],
+    tags: [templateName],
     params: {
       resetPasswordUrl: resetPasswordUrl,
       activationKey: activationKey,
@@ -42,10 +51,17 @@ async function sendResetPasswordEmail(host, toAddress, activationKey, activation
   return !!result
 }
 
-async function sendPassword(email, returnTo, cb) {
+// Options: returnTo is the redirect path; emailType is 'reset' or 'welcome' and defaults to 'reset'.
+// A string returnTo is also accepted for existing callers.
+async function sendPassword(email, options, cb) {
+  if (typeof options === 'string') options = { returnTo: options }
+  const { returnTo, emailType = DEFAULT_EMAIL_TYPE } = options || {}
+  const selectedEmailType = emailVariants[emailType] ? emailType : DEFAULT_EMAIL_TYPE
+  const normalizedEmail = User.normalizeEmail(email)
+
   const { host } = this.handshake.headers
 
-  await User.findOne({ email })
+  await User.findOne({ email: normalizedEmail }, { collation: User.emailCollation })
     .then(async user => {
       if (!user) {
         logger.warn('no user found with email:', email)
@@ -56,10 +72,11 @@ async function sendPassword(email, returnTo, cb) {
 
         const sendResetSuccess = await sendResetPasswordEmail(
           host,
-          email,
+          user.email || normalizedEmail,
           user.activationKey,
           user.activationToken,
-          returnTo
+          returnTo,
+          selectedEmailType
         )
         if (!sendResetSuccess) {
           cb('error sending reset password email')

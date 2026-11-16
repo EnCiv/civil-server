@@ -94,4 +94,14 @@ describe('signIn Function', ()=> {
     await signIn(mockRequest, mockResponse, next)
     expect(next).toHaveBeenCalledWith()
   })
+
+  it('should match a legacy mixed-case email', async()=> {
+    await User.updateOne({ email: 'success@email.com' }, { $set: { email: 'Success@Email.com' } })
+    mockRequest = { body: { email: ' SUCCESS@email.com ', password: 'password' } }
+    next.mockClear()
+
+    await signIn(mockRequest, mockResponse, next)
+
+    expect(next).toHaveBeenCalledWith()
+  })
 })

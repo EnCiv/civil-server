@@ -79,9 +79,52 @@ describe('sendPassword function', ()=> {
     it('should execute callback function once without any arguments if reset email was sent successfully', async ()=>{
       let mockCb = jest.fn()
       mockEmail = 'success@email.com'
+      SibSendTransacEmail.mockClear()
       SibSendTransacEmail.mockImplementation(() => true)
       await sendPassword.call( mockThisObj, mockEmail, mockReturnTo, mockCb)
       expect(mockCb).toHaveBeenCalledWith()
       expect(mockCb).toHaveBeenCalledTimes(1)
+      expect(SibSendTransacEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: ['reset-password'] })
+      )
+    })
+
+    it('should send the welcome template when requested', async()=>{
+      const mockCb = jest.fn()
+      SibGetTemplateId.mockClear()
+      SibSendTransacEmail.mockImplementation(() => true)
+
+      await sendPassword.call(mockThisObj, mockEmail, { returnTo: mockReturnTo, emailType: 'welcome' }, mockCb)
+
+      expect(SibGetTemplateId).toHaveBeenCalledWith(expect.stringMatching(/welcome-password\.html$/))
+      expect(SibSendTransacEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: ['welcome-password'] })
+      )
+      expect(mockCb).toHaveBeenCalledWith()
+    })
+
+    it('should find users with mixed-case email input', async()=>{
+      const mockCb = jest.fn()
+      SibSendTransacEmail.mockImplementation(() => true)
+
+      await sendPassword.call(mockThisObj, ' Success@Email.com ', mockReturnTo, mockCb)
+
+      expect(SibSendTransacEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ to: [{ email: 'success@email.com' }] })
+      )
+      expect(mockCb).toHaveBeenCalledWith()
+    })
+
+    it('should use the default template for unknown email types', async()=>{
+      const mockCb = jest.fn()
+      SibSendTransacEmail.mockClear()
+      SibSendTransacEmail.mockImplementation(() => true)
+
+      await sendPassword.call(mockThisObj, mockEmail, { returnTo: mockReturnTo, emailType: 'unknown' }, mockCb)
+
+      expect(SibSendTransacEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: ['reset-password'] })
+      )
+      expect(mockCb).toHaveBeenCalledWith()
     })
 })

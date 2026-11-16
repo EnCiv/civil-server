@@ -20,7 +20,8 @@ export const signIn = async function signIn(req, res, next) {
       res.json({ error: 'Missing password' })
     } else {
       try {
-        var user = await User.findOne({ email })
+        email = User.normalizeEmail(email)
+        var user = await User.findOne({ email }, { collation: User.emailCollation })
         if (!user) {
           res.statusCode = 404
           res.json({ 'user/password error': email })

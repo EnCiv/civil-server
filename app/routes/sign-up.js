@@ -2,6 +2,7 @@
 
 import User from '../models/user'
 import sendUserId from '../server/util/send-user-id'
+import sendWelcomeEmail from '../lib/send-welcome-email'
 
 export function signUp(req, res, next) {
   try {
@@ -20,6 +21,9 @@ export function signUp(req, res, next) {
       User.create(req.body).then(
         user => {
           req.user = user
+          sendWelcomeEmail(user.email).catch(error => {
+            logger.error('sign-up welcome email failed', { email: user.email }, error)
+          })
           return next()
         },
         error => {

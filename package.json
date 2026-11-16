@@ -49,6 +49,9 @@
     "supertest": "^7.1.0",
     "webpack-dev-server": "^6.0.0"
   },
+  "peerDependencies": {
+    "civil-client": "github:EnCiv/civil-client" 
+  },
   "devDependencies": {
     "@babel/cli": "^8.0.4",
     "@babel/core": "^8.0.1",
