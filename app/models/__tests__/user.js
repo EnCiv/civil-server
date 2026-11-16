@@ -36,6 +36,14 @@ describe('create method', () => {
     const expectedDbUser = dbUser
     expectedDbUser.password = expect.stringMatching(HASHED_PASSWORD_REGEX)
     expect(user).toMatchObject(dbUser)
+  }
+  test('normalizes email and rejects case-insensitive duplicates', async () => {
+    const user = await User.create({ email: ' Mixed.Case@Example.com ', password: 'password' })
+    expect(user.email).toBe('mixed.case@example.com')
+
+    await expect(User.create({ email: 'MIXED.CASE@example.com', password: 'password' })).rejects.toThrow(
+      /duplicate key error email/
+    )
   })
 
   test('missing password', async () => {
@@ -141,7 +149,7 @@ describe('resetPassword method', () => {
   test('empty tokens do not match users whose tokens were already cleared', async () => {
     await User.resetPassword(activationToken, activationKey, 'firstPassword')
     expect(await User.resetPassword('', '', 'secondPassword')).toEqual({ success: false, code: 'INVALID_RESET_KEY' })
-    const updatedUser = await User.findOne({ email })
+    const updatedUser = await User.findOne({ email: User.normalizeEmail(email) })
     expect(await User.validatePassword(updatedUser, 'firstPassword')).toBeTruthy()
   })
 
@@ -155,7 +163,7 @@ describe('resetPassword method', () => {
     } finally {
       findOne.mockRestore()
     }
-    const unchanged = await User.findOne({ email })
+    const unchanged = await User.findOne({ email: User.normalizeEmail(email) })
     expect(unchanged.activationToken).toBe(activationToken)
     expect(unchanged.activationKey).toBe(activationKey)
     expect(await User.validatePassword(unchanged, 'password')).toBeTruthy()
@@ -183,8 +191,9 @@ describe('resetPassword method', () => {
     const newPassword = 'newPassword'
     expect(await User.resetPassword(activationToken, activationKey, newPassword)).toEqual({ success: true })
 
-    const updatedUser = await User.findOne({ email: 'resetUser@email.com' })
+    const updatedUser = await User.findOne({ email: User.normalizeEmail('resetUser@email.com') })
     const expectedDbUser = { ...dbUser }
+    expectedDbUser.email = User.normalizeEmail(expectedDbUser.email)
     expectedDbUser.activationKey = ''
     expectedDbUser.activationToken = ''
     expectedDbUser.tokenExpirationDate = ''
@@ -199,7 +208,7 @@ describe('resetPassword method', () => {
       success: false,
       code: 'INVALID_RESET_KEY',
     })
-    const updatedUser = await User.findOne({ email })
+    const updatedUser = await User.findOne({ email: User.normalizeEmail(email) })
     expect(await User.validatePassword(updatedUser, 'firstPassword')).toBeTruthy()
   })
 

@@ -57,10 +57,11 @@ async function sendPassword(email, options, cb) {
   if (typeof options === 'string') options = { returnTo: options }
   const { returnTo, emailType = DEFAULT_EMAIL_TYPE } = options || {}
   const selectedEmailType = emailVariants[emailType] ? emailType : DEFAULT_EMAIL_TYPE
+  const normalizedEmail = User.normalizeEmail(email)
 
   const { host } = this.handshake.headers
 
-  await User.findOne({ email })
+  await User.findOne({ email: normalizedEmail }, { collation: User.emailCollation })
     .then(async user => {
       if (!user) {
         logger.warn('no user found with email:', email)
@@ -71,7 +72,7 @@ async function sendPassword(email, options, cb) {
 
         const sendResetSuccess = await sendResetPasswordEmail(
           host,
-          email,
+          user.email || normalizedEmail,
           user.activationKey,
           user.activationToken,
           returnTo,

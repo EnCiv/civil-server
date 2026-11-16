@@ -30,6 +30,11 @@ class User extends Collection {
       partialFilterExpression: { email: { $exists: true } },
     },
   ]
+  static emailCollation = { locale: 'en', strength: 2 }
+
+    static normalizeEmail(email) {
+    return typeof email === 'string' ? email.trim().toLowerCase() : email
+    }
 
   static validate(doc) {
     return schema.validate(doc)
@@ -45,6 +50,14 @@ class User extends Collection {
       throw new Error(error)
     } else {
       try {
+        if (typeof user.email === 'string') {
+          user.email = this.normalizeEmail(user.email)
+          const existingUser = await this.findOne(
+            { email: user.email },
+            { collation: this.emailCollation }
+          )
+          if (existingUser) throw new Error(`duplicate key error email: ${user.email}`)
+        }
         const hash = await bcrypt.hash(password, 10)
         user.password = hash
         const doc = new User(user)
